@@ -182,7 +182,7 @@ socket.on("queueUpdate",d=>{document.getElementById("qI").textContent=`Position:
 
 // GAME EVENTS
 socket.on("matchFound",d=>{myRole=d.you;opp=d.opp;curAr=d.me?.arena||"glacier";score={p1:0,p2:0};roundNum=0;stats={b:1,r:2,s:1,k:false};document.getElementById("igCB").innerHTML="";go("game");});
-socket.on("roundStart",d=>{roundNum=d.round;curAr=d.arena||"glacier";showOv(`<div class="f1" style="font-size:14px;color:#7A9BBF;letter-spacing:4px;margin-bottom:6px">ROUND ${d.round}</div><div class="f1" style="font-size:72px;font-weight:700;color:#67D4FF;text-shadow:0 0 40px #0EA5E9">${d.cd}</div>`);});
+socket.on("roundStart",d=>{roundNum=d.round;curAr=d.arena||"glacier";score=d.sc||score;showOv(`<div class="f1" style="font-size:14px;color:#7A9BBF;letter-spacing:4px;margin-bottom:6px">ROUND ${d.round}</div><div class="f1" style="font-size:72px;font-weight:700;color:#67D4FF;text-shadow:0 0 40px #0EA5E9">${d.cd}</div>`);});
 socket.on("countdown",d=>{if(d.v>0)showOv(`<div class="f1" style="font-size:14px;color:#7A9BBF;letter-spacing:4px;margin-bottom:6px">ROUND ${roundNum}</div><div class="f1" style="font-size:72px;font-weight:700;color:#67D4FF;text-shadow:0 0 40px #0EA5E9">${d.v}</div>`);else showOv(`<div class="f1" style="font-size:72px;font-weight:700;color:#34D399;text-shadow:0 0 40px #34D399">GO!</div>`);});
 socket.on("roundBegin",d=>{grid=d.grid;ent=d.ent;bombs=[];pups=[];expl=[];emotes=[];particles=[];stats={b:1,r:2,s:1,k:false};timer=120;sdeath=false;hideOv();updSc();updSt();startMv();});
 socket.on("tick",d=>{ent=d.ent;bombs=d.bombs;pups=d.pups;timer=d.timer;if(d.grid)grid=d.grid;expl=d.expl||[];emotes=d.emotes||[];const m=ent?.[myRole];if(m){stats={b:m.mB,r:m.range,s:m.spd,k:m.kick};updSt();}updSc();});
@@ -255,13 +255,13 @@ function render(){
   // Emotes
   for(const em of(emotes||[])){const e=ent?.[em.pid];if(!e)continue;const ed=EM[em.key];if(!ed)continue;const age=(now-em.time)/2500;if(age>1)continue;
     const fi=Math.min(1,(now-em.time)/200),fo=age>.7?1-(age-.7)/.3:1,al=fi*fo;
-    const fy=-40-age*20,wb=Math.sin((now-em.time)/120)*3;const bs=age<.1?.5+age*5:age<.2?1+(.2-age)*3:1;
+    const fy=-36-age*18,wb=Math.sin((now-em.time)/120)*2.5;const bs=age<.1?.7+age*3:age<.15?1+(.15-age)*2:1;
     ctx.save();ctx.translate(e.px+wb,e.py+fy);ctx.globalAlpha=al;ctx.scale(bs,bs);
-    ctx.fillStyle="rgba(255,255,255,.94)";ctx.strokeStyle=ed.c;ctx.lineWidth=2;
-    const bw=32,bh=20,br=8;ctx.beginPath();ctx.moveTo(-bw+br,-bh);ctx.lineTo(bw-br,-bh);ctx.arcTo(bw,-bh,bw,-bh+br,br);ctx.lineTo(bw,bh-br);ctx.arcTo(bw,bh,bw-br,bh,br);ctx.lineTo(-bw+br,bh);ctx.arcTo(-bw,bh,-bw,bh-br,br);ctx.lineTo(-bw,-bh+br);ctx.arcTo(-bw,-bh,-bw+br,-bh,br);ctx.closePath();ctx.fill();ctx.stroke();
-    ctx.beginPath();ctx.moveTo(-3,20);ctx.lineTo(0,26);ctx.lineTo(3,20);ctx.fillStyle="rgba(255,255,255,.94)";ctx.fill();
-    ctx.font="18px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(ed.e,0,-2);
-    ctx.font="bold 7px sans-serif";ctx.fillStyle=ed.c;ctx.fillText(ed.t,0,12);ctx.restore();}
+    ctx.fillStyle="rgba(255,255,255,.94)";ctx.strokeStyle=ed.c;ctx.lineWidth=1.5;
+    const bw=22,bh=14,br=6;ctx.beginPath();ctx.moveTo(-bw+br,-bh);ctx.lineTo(bw-br,-bh);ctx.arcTo(bw,-bh,bw,-bh+br,br);ctx.lineTo(bw,bh-br);ctx.arcTo(bw,bh,bw-br,bh,br);ctx.lineTo(-bw+br,bh);ctx.arcTo(-bw,bh,-bw,bh-br,br);ctx.lineTo(-bw,-bh+br);ctx.arcTo(-bw,-bh,-bw+br,-bh,br);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.moveTo(-2,14);ctx.lineTo(0,18);ctx.lineTo(2,14);ctx.fillStyle="rgba(255,255,255,.94)";ctx.fill();
+    ctx.font="13px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(ed.e,0,-1);
+    ctx.font="bold 5px sans-serif";ctx.fillStyle=ed.c;ctx.fillText(ed.t,0,9);ctx.restore();}
   requestAnimationFrame(render);}
 requestAnimationFrame(render);
 </script></body></html>
