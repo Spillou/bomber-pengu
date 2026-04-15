@@ -13,7 +13,7 @@ const gCh=()=>ld("chat.json",[]),sCh=c=>sv("chat.json",c);
 
 const IW=13,IH=11,GW=IW+2,GH=IH+2,CELL=52;
 const FUSE=3400,EXDUR=500,RTIME=120,SDI=400;
-const PUC=0.4,SR=2,SPD=4.2,CC=11,TICK=1000/30;
+const PUC=0.4,SR=2,SPD=2.2,CC=11,TICK=1000/60,KICK_SPD=2.5;
 const T={E:0,W:1,B:2},DR=[[0,-1],[0,1],[-1,0],[1,0]],PTS=["range","bombs","speed","kick"];
 const TN=["Bronze","Argent","Or","Platine","Diamant","Maître"];
 const TC=["#CD7F32","#C0C0C0","#FFD700","#00CED1","#B9F2FF","#FF6B6B"];
@@ -59,7 +59,7 @@ function gameTick(gid){const g=games.get(gid);if(!g||g.phase!=="play")return;con
   if(rem<=0&&!g.sd){g.sd=true;g.sdL=now;bc(g,"suddenDeath",{})}
   if(g.sd&&g.sdI<g.sdO.length&&now-g.sdL>=SDI){const c=g.sdO[g.sdI];if(g.grid[c.y][c.x]!==T.W){g.grid[c.y][c.x]=T.W;g.pups=g.pups.filter(p=>!(p.x===c.x&&p.y===c.y));for(const pid of["p1","p2"]){const e=g.ent[pid];if(e.alive&&e.gx===c.x&&e.gy===c.y)e.alive=false}bc(g,"wallPlace",{x:c.x,y:c.y})}g.sdI++;g.sdL=now}
   for(const b of[...g.bombs])if(now>=b.timer)explode(g,b);
-  for(const kb of[...g.kicked]){const bomb=g.bombs.find(b=>b.id===kb.id);if(!bomb){g.kicked=g.kicked.filter(k=>k.id!==kb.id);continue}const nx=bomb.gx+kb.dx,ny=bomb.gy+kb.dy;if(nx>=0&&nx<GW&&ny>=0&&ny<GH&&g.grid[ny][nx]===T.E&&!g.bombs.some(ob=>ob.id!==bomb.id&&ob.gx===nx&&ob.gy===ny)){bomb.gx=nx;bomb.gy=ny;bomb.px=nx*CELL+CELL/2;bomb.py=ny*CELL+CELL/2;if(bomb.gx===kb.tx&&bomb.gy===kb.ty)g.kicked=g.kicked.filter(k=>k.id!==kb.id)}else g.kicked=g.kicked.filter(k=>k.id!==kb.id)}
+  for(const kb of[...g.kicked]){const bomb=g.bombs.find(b=>b.id===kb.id);if(!bomb){g.kicked=g.kicked.filter(k=>k.id!==kb.id);continue}const tpx=kb.tx*CELL+CELL/2,tpy=kb.ty*CELL+CELL/2;const ddx=tpx-bomb.px,ddy=tpy-bomb.py;if(Math.abs(ddx)<KICK_SPD&&Math.abs(ddy)<KICK_SPD){bomb.px=tpx;bomb.py=tpy;bomb.gx=kb.tx;bomb.gy=kb.ty;g.kicked=g.kicked.filter(k=>k.id!==kb.id)}else{bomb.px+=Math.sign(ddx)*Math.min(KICK_SPD,Math.abs(ddx));bomb.py+=Math.sign(ddy)*Math.min(KICK_SPD,Math.abs(ddy));bomb.gx=Math.floor(bomb.px/CELL);bomb.gy=Math.floor(bomb.py/CELL);const nx=bomb.gx+kb.dx,ny=bomb.gy+kb.dy;if(nx<0||nx>=GW||ny<0||ny>=GH||g.grid[ny][nx]!==T.E||g.bombs.some(ob=>ob.id!==bomb.id&&ob.gx===nx&&ob.gy===ny)){bomb.px=bomb.gx*CELL+CELL/2;bomb.py=bomb.gy*CELL+CELL/2;g.kicked=g.kicked.filter(k=>k.id!==kb.id)}}}
   g.expl=g.expl.filter(e=>now-e.time<EXDUR);for(const ex of g.expl)for(const c of ex.cells){for(const pid of["p1","p2"]){const e=g.ent[pid];if(e.alive&&e.gx===c.x&&e.gy===c.y)e.alive=false}}
   if(!g.ent.p1.alive||!g.ent.p2.alive){let w="draw";if(!g.ent.p1.alive&&g.ent.p2.alive)w="p2";if(g.ent.p1.alive&&!g.ent.p2.alive)w="p1";endRound(gid,w);return}
   bc(g,"tick",{ent:sE(g.ent),bombs:g.bombs.map(b=>({gx:b.gx,gy:b.gy,px:b.px,py:b.py,timer:b.timer,id:b.id,owner:b.owner,range:b.range})),pups:g.pups,expl:g.expl.map(e=>({cells:e.cells,time:e.time})),grid:g.grid,timer:rem,emotes:g.emotes});
