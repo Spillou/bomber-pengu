@@ -72,10 +72,15 @@ function explode(g,bomb){if(!g.bombs.some(b=>b.id===bomb.id))return;const owner=
 
 function endRound(gid,winner){const g=games.get(gid);if(!g||g.phase!=="play")return;clearInterval(g.tick);g.phase="rEnd";if(winner==="p1"){g.sc.p1++;g.mStats.p1.kills++}else if(winner==="p2"){g.sc.p2++;g.mStats.p2.kills++}bc(g,"roundEnd",{winner,sc:g.sc});if(g.sc.p1>=3||g.sc.p2>=3)setTimeout(()=>endMatch(gid),2000);else setTimeout(()=>startCD(gid),2500)}
 
+function calcXP(won,kills,pups){let xp=won?50:15;xp+=kills*10;xp+=pups*3;xp+=10;return xp} // win=50,loss=15,per kill=10,per pup=3,participation=10
+function getLevel(xp){let lvl=1,need=100;while(xp>=need){xp-=need;lvl++;need=Math.floor(100+lvl*20)}return{level:lvl,xp,need}}
+function applyXP(u,xpGain){u.xp=(u.xp||0)+xpGain;const lv=getLevel(u.xp);u.level=lv.level}
+
 function endMatch(gid){const g=games.get(gid);if(!g)return;g.phase="mEnd";clearInterval(g.tick);const mw=g.sc.p1>=3?"p1":"p2",ml=mw==="p1"?"p2":"p1";const wu=gU(g.pl[mw].name),lu=gU(g.pl[ml].name);
-  if(wu&&lu){const wd=cLP(wu.lp,lu.lp,true),ld2=cLP(lu.lp,wu.lp,false);wu.lp=Math.max(0,wu.lp+wd);wu.wins=(wu.wins||0)+1;wu.games=(wu.games||0)+1;wu.currentStreak=(wu.currentStreak||0)+1;wu.bestStreak=Math.max(wu.bestStreak||0,wu.currentStreak);wu.kills=(wu.kills||0)+g.mStats[mw].kills;wu.bombsPlaced=(wu.bombsPlaced||0)+g.mStats[mw].bombs;wu.pupsCollected=(wu.pupsCollected||0)+g.mStats[mw].pups;wu.history=[{t:Date.now(),vs:lu.username,r:"W",s:`${g.sc.p1}-${g.sc.p2}`,lp:wd},...(wu.history||[]).slice(0,19)];pU(wu);uLB(wu);
-    lu.lp=Math.max(0,lu.lp+ld2);lu.losses=(lu.losses||0)+1;lu.games=(lu.games||0)+1;lu.currentStreak=0;lu.kills=(lu.kills||0)+g.mStats[ml].kills;lu.bombsPlaced=(lu.bombsPlaced||0)+g.mStats[ml].bombs;lu.pupsCollected=(lu.pupsCollected||0)+g.mStats[ml].pups;lu.history=[{t:Date.now(),vs:wu.username,r:"L",s:`${g.sc.p1}-${g.sc.p2}`,lp:ld2},...(lu.history||[]).slice(0,19)];pU(lu);uLB(lu);
-    g.pl[mw].sock.emit("matchEnd",{result:"win",lpD:wd,sc:g.sc,opp:lu.username});g.pl[ml].sock.emit("matchEnd",{result:"lose",lpD:ld2,sc:g.sc,opp:wu.username})}
+  if(wu&&lu){const wd=cLP(wu.lp,lu.lp,true),ld2=cLP(lu.lp,wu.lp,false);const wxp=calcXP(true,g.mStats[mw].kills,g.mStats[mw].pups);const lxp=calcXP(false,g.mStats[ml].kills,g.mStats[ml].pups);
+    wu.lp=Math.max(0,wu.lp+wd);wu.wins=(wu.wins||0)+1;wu.games=(wu.games||0)+1;wu.currentStreak=(wu.currentStreak||0)+1;wu.bestStreak=Math.max(wu.bestStreak||0,wu.currentStreak);wu.kills=(wu.kills||0)+g.mStats[mw].kills;wu.bombsPlaced=(wu.bombsPlaced||0)+g.mStats[mw].bombs;wu.pupsCollected=(wu.pupsCollected||0)+g.mStats[mw].pups;applyXP(wu,wxp);wu.history=[{t:Date.now(),vs:lu.username,r:"W",s:`${g.sc.p1}-${g.sc.p2}`,lp:wd},...(wu.history||[]).slice(0,19)];pU(wu);uLB(wu);
+    lu.lp=Math.max(0,lu.lp+ld2);lu.losses=(lu.losses||0)+1;lu.games=(lu.games||0)+1;lu.currentStreak=0;lu.kills=(lu.kills||0)+g.mStats[ml].kills;lu.bombsPlaced=(lu.bombsPlaced||0)+g.mStats[ml].bombs;lu.pupsCollected=(lu.pupsCollected||0)+g.mStats[ml].pups;applyXP(lu,lxp);lu.history=[{t:Date.now(),vs:wu.username,r:"L",s:`${g.sc.p1}-${g.sc.p2}`,lp:ld2},...(lu.history||[]).slice(0,19)];pU(lu);uLB(lu);
+    g.pl[mw].sock.emit("matchEnd",{result:"win",lpD:wd,sc:g.sc,opp:lu.username,xp:wxp});g.pl[ml].sock.emit("matchEnd",{result:"lose",lpD:ld2,sc:g.sc,opp:wu.username,xp:lxp})}
   setTimeout(()=>{pGame.delete(g.pl.p1.sock.id);pGame.delete(g.pl.p2.sock.id);pInput.delete(g.pl.p1.sock.id);pInput.delete(g.pl.p2.sock.id);games.delete(gid)},5000)}
 
 function endMatchDraw(gid){const g=games.get(gid);if(!g)return;g.phase="mEnd";clearInterval(g.tick);
@@ -87,7 +92,7 @@ function endMatchDraw(gid){const g=games.get(gid);if(!g)return;g.phase="mEnd";cl
 
 io.on("connection",sock=>{
   onlineCount++;io.emit("onlineCount",onlineCount);console.log("+",sock.id,onlineCount);
-  sock.on("register",({username,password},cb)=>{if(!username||!password||username.length<3)return cb({error:"Pseudo trop court"});if(gU(username))return cb({error:"Pseudo déjà pris"});const u={username,password,lp:0,wins:0,losses:0,games:0,avatar:"🐧",skin:"classic",arena:"glacier",flocons:500,ownedSkins:["classic"],ownedArenas:["glacier"],featuredBadges:[null,null,null],kills:0,bombsPlaced:0,pupsCollected:0,bestStreak:0,currentStreak:0,history:[]};pU(u);uLB(u);cb({user:u})});
+  sock.on("register",({username,password},cb)=>{if(!username||!password||username.length<3)return cb({error:"Pseudo trop court"});if(gU(username))return cb({error:"Pseudo déjà pris"});const u={username,password,lp:0,wins:0,losses:0,games:0,avatar:"🐧",skin:"classic",arena:"glacier",flocons:500,ownedSkins:["classic"],ownedArenas:["glacier"],featuredBadges:[null,null,null],kills:0,bombsPlaced:0,pupsCollected:0,bestStreak:0,currentStreak:0,history:[],xp:0,level:1};pU(u);uLB(u);cb({user:u})});
   sock.on("login",({username,password},cb)=>{const u=gU(username);if(!u)return cb({error:"Compte introuvable"});if(u.password!==password)return cb({error:"Mot de passe incorrect"});cb({user:u})});
   sock.on("getUser",({username},cb)=>{const u=gU(username);if(u){const{password,...safe}=u;cb({user:safe})}else cb({user:null})});
   sock.on("updateUser",({user},cb)=>{const ex=gU(user.username);if(ex){const upd={...ex,...user,password:ex.password};pU(upd);uLB(upd);cb({user:upd})}else cb({error:"Not found"})});
