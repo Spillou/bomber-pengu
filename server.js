@@ -33,7 +33,7 @@ let onlineCount=0;
 function findMatch(){if(queue.length<2)return;queue.sort((a,b)=>a.lp-b.lp);let bi=0,bd=Infinity;for(let i=0;i<queue.length-1;i++){const d=Math.abs(queue[i].lp-queue[i+1].lp);if(d<bd){bd=d;bi=i}}const p1=queue.splice(bi+1,1)[0],p2=queue.splice(bi,1)[0];createGame(p1,p2)}
 
 function createGame(p1,p2){const gid=`g_${Date.now()}_${Math.random().toString(36).substr(2,4)}`;const u1=gU(p1.username),u2=gU(p2.username);
-  const g={id:gid,pl:{p1:{sock:p1.socket,name:p1.username,lp:p1.lp,skin:u1?.skin||"classic",arena:u1?.arena||"glacier",avatar:u1?.avatar||"🐧"},p2:{sock:p2.socket,name:p2.username,lp:p2.lp,skin:u2?.skin||"classic",arena:u2?.arena||"glacier",avatar:u2?.avatar||"🐧"}},sc:{p1:0,p2:0},rn:0,phase:"cd",cd:3,grid:null,ent:null,bombs:[],expl:[],pups:[],kicked:[],emotes:[],sd:false,sdO:[],sdI:0,sdL:0,rStart:0,tick:null,cdInt:null,curArena:"glacier",drawProposed:null,drawUsed:{p1:false,p2:false}};
+  const g={id:gid,pl:{p1:{sock:p1.socket,name:p1.username,lp:p1.lp,skin:u1?.skin||"classic",arena:u1?.arena||"glacier",avatar:u1?.avatar||"🐧"},p2:{sock:p2.socket,name:p2.username,lp:p2.lp,skin:u2?.skin||"classic",arena:u2?.arena||"glacier",avatar:u2?.avatar||"🐧"}},sc:{p1:0,p2:0},rn:0,phase:"cd",cd:3,grid:null,ent:null,bombs:[],expl:[],pups:[],kicked:[],emotes:[],sd:false,sdO:[],sdI:0,sdL:0,rStart:0,tick:null,cdInt:null,curArena:"glacier",drawProposed:null,drawUsed:{p1:false,p2:false},mStats:{p1:{bombs:0,pups:0,kills:0},p2:{bombs:0,pups:0,kills:0}}};
   games.set(gid,g);pGame.set(p1.socket.id,gid);pGame.set(p2.socket.id,gid);pInput.set(p1.socket.id,{dx:0,dy:0});pInput.set(p2.socket.id,{dx:0,dy:0});
   const mkI=u=>({username:u?.username,lp:u?.lp,skin:u?.skin,arena:u?.arena,avatar:u?.avatar||"🐧"});
   p1.socket.emit("matchFound",{gid,you:"p1",opp:mkI(u2),me:mkI(u1)});
@@ -54,7 +54,7 @@ function startRound(gid){const g=games.get(gid);if(!g)return;g.grid=mkG();g.bomb
 function sE(ent){const r={};for(const p of["p1","p2"]){const e=ent[p];r[p]={px:e.px,py:e.py,gx:e.gx,gy:e.gy,range:e.range,mB:e.mB,bL:e.bL,spd:e.spd,kick:e.kick,alive:e.alive,dir:e.dir}}return r}
 
 function gameTick(gid){const g=games.get(gid);if(!g||g.phase!=="play")return;const now=Date.now();
-  for(const pid of["p1","p2"]){const e=g.ent[pid];if(!e.alive)continue;const inp=pInput.get(g.pl[pid].sock.id)||{dx:0,dy:0};if(inp.dx||inp.dy){e.dir={dx:inp.dx,dy:inp.dy};const spd=SPD*(1+(e.spd-1)*.3);if(tryMv(e,inp.dx,inp.dy,spd,g.grid,g.bombs,g)){const pi=g.pups.findIndex(p=>p.x===e.gx&&p.y===e.gy);if(pi>=0){const pu=g.pups[pi];if(pu.type==="range")e.range=Math.min(e.range+1,8);if(pu.type==="bombs"){e.mB++;e.bL++}if(pu.type==="speed")e.spd=Math.min(e.spd+1,3);if(pu.type==="kick")e.kick=true;g.pups.splice(pi,1);bc(g,"pickup",{pid,type:pu.type,x:e.gx,y:e.gy})}}}}
+  for(const pid of["p1","p2"]){const e=g.ent[pid];if(!e.alive)continue;const inp=pInput.get(g.pl[pid].sock.id)||{dx:0,dy:0};if(inp.dx||inp.dy){e.dir={dx:inp.dx,dy:inp.dy};const spd=SPD*(1+(e.spd-1)*.3);if(tryMv(e,inp.dx,inp.dy,spd,g.grid,g.bombs,g)){const pi=g.pups.findIndex(p=>p.x===e.gx&&p.y===e.gy);if(pi>=0){const pu=g.pups[pi];if(pu.type==="range")e.range=Math.min(e.range+1,8);if(pu.type==="bombs"){e.mB++;e.bL++}if(pu.type==="speed")e.spd=Math.min(e.spd+1,3);if(pu.type==="kick")e.kick=true;g.pups.splice(pi,1);g.mStats[pid].pups++;bc(g,"pickup",{pid,type:pu.type,x:e.gx,y:e.gy})}}}}
   const rem=Math.max(0,RTIME-Math.floor((now-g.rStart)/1000));
   if(rem<=0&&!g.sd){g.sd=true;g.sdL=now;bc(g,"suddenDeath",{})}
   if(g.sd&&g.sdI<g.sdO.length&&now-g.sdL>=SDI){const c=g.sdO[g.sdI];if(g.grid[c.y][c.x]!==T.W){g.grid[c.y][c.x]=T.W;g.pups=g.pups.filter(p=>!(p.x===c.x&&p.y===c.y));for(const pid of["p1","p2"]){const e=g.ent[pid];if(e.alive&&e.gx===c.x&&e.gy===c.y)e.alive=false}bc(g,"wallPlace",{x:c.x,y:c.y})}g.sdI++;g.sdL=now}
@@ -70,18 +70,18 @@ function explode(g,bomb){if(!g.bombs.some(b=>b.id===bomb.id))return;const owner=
   g.pups=g.pups.filter(p=>{if(nP.has(p.id))return true;return!cells.some(c=>c.x===p.x&&c.y===p.y)});g.expl.push({cells,time:Date.now()});
   for(const pid of["p1","p2"]){const e=g.ent[pid];if(e.alive&&cells.some(c=>c.x===e.gx&&c.y===e.gy))e.alive=false}bc(g,"explosion",{cells,bx:bomb.gx,by:bomb.gy})}
 
-function endRound(gid,winner){const g=games.get(gid);if(!g||g.phase!=="play")return;clearInterval(g.tick);g.phase="rEnd";if(winner==="p1")g.sc.p1++;else if(winner==="p2")g.sc.p2++;bc(g,"roundEnd",{winner,sc:g.sc});if(g.sc.p1>=3||g.sc.p2>=3)setTimeout(()=>endMatch(gid),2000);else setTimeout(()=>startCD(gid),2500)}
+function endRound(gid,winner){const g=games.get(gid);if(!g||g.phase!=="play")return;clearInterval(g.tick);g.phase="rEnd";if(winner==="p1"){g.sc.p1++;g.mStats.p1.kills++}else if(winner==="p2"){g.sc.p2++;g.mStats.p2.kills++}bc(g,"roundEnd",{winner,sc:g.sc});if(g.sc.p1>=3||g.sc.p2>=3)setTimeout(()=>endMatch(gid),2000);else setTimeout(()=>startCD(gid),2500)}
 
 function endMatch(gid){const g=games.get(gid);if(!g)return;g.phase="mEnd";clearInterval(g.tick);const mw=g.sc.p1>=3?"p1":"p2",ml=mw==="p1"?"p2":"p1";const wu=gU(g.pl[mw].name),lu=gU(g.pl[ml].name);
-  if(wu&&lu){const wd=cLP(wu.lp,lu.lp,true),ld2=cLP(lu.lp,wu.lp,false);wu.lp=Math.max(0,wu.lp+wd);wu.wins=(wu.wins||0)+1;wu.games=(wu.games||0)+1;wu.currentStreak=(wu.currentStreak||0)+1;wu.bestStreak=Math.max(wu.bestStreak||0,wu.currentStreak);wu.history=[{t:Date.now(),vs:lu.username,r:"W",s:`${g.sc.p1}-${g.sc.p2}`,lp:wd},...(wu.history||[]).slice(0,19)];pU(wu);uLB(wu);
-    lu.lp=Math.max(0,lu.lp+ld2);lu.losses=(lu.losses||0)+1;lu.games=(lu.games||0)+1;lu.currentStreak=0;lu.history=[{t:Date.now(),vs:wu.username,r:"L",s:`${g.sc.p1}-${g.sc.p2}`,lp:ld2},...(lu.history||[]).slice(0,19)];pU(lu);uLB(lu);
+  if(wu&&lu){const wd=cLP(wu.lp,lu.lp,true),ld2=cLP(lu.lp,wu.lp,false);wu.lp=Math.max(0,wu.lp+wd);wu.wins=(wu.wins||0)+1;wu.games=(wu.games||0)+1;wu.currentStreak=(wu.currentStreak||0)+1;wu.bestStreak=Math.max(wu.bestStreak||0,wu.currentStreak);wu.kills=(wu.kills||0)+g.mStats[mw].kills;wu.bombsPlaced=(wu.bombsPlaced||0)+g.mStats[mw].bombs;wu.pupsCollected=(wu.pupsCollected||0)+g.mStats[mw].pups;wu.history=[{t:Date.now(),vs:lu.username,r:"W",s:`${g.sc.p1}-${g.sc.p2}`,lp:wd},...(wu.history||[]).slice(0,19)];pU(wu);uLB(wu);
+    lu.lp=Math.max(0,lu.lp+ld2);lu.losses=(lu.losses||0)+1;lu.games=(lu.games||0)+1;lu.currentStreak=0;lu.kills=(lu.kills||0)+g.mStats[ml].kills;lu.bombsPlaced=(lu.bombsPlaced||0)+g.mStats[ml].bombs;lu.pupsCollected=(lu.pupsCollected||0)+g.mStats[ml].pups;lu.history=[{t:Date.now(),vs:wu.username,r:"L",s:`${g.sc.p1}-${g.sc.p2}`,lp:ld2},...(lu.history||[]).slice(0,19)];pU(lu);uLB(lu);
     g.pl[mw].sock.emit("matchEnd",{result:"win",lpD:wd,sc:g.sc,opp:lu.username});g.pl[ml].sock.emit("matchEnd",{result:"lose",lpD:ld2,sc:g.sc,opp:wu.username})}
   setTimeout(()=>{pGame.delete(g.pl.p1.sock.id);pGame.delete(g.pl.p2.sock.id);pInput.delete(g.pl.p1.sock.id);pInput.delete(g.pl.p2.sock.id);games.delete(gid)},5000)}
 
 function endMatchDraw(gid){const g=games.get(gid);if(!g)return;g.phase="mEnd";clearInterval(g.tick);
   const u1=gU(g.pl.p1.name),u2=gU(g.pl.p2.name);
-  if(u1){u1.games=(u1.games||0)+1;u1.history=[{t:Date.now(),vs:u2?.username||"?",r:"D",s:`${g.sc.p1}-${g.sc.p2}`,lp:0},...(u1.history||[]).slice(0,19)];pU(u1)}
-  if(u2){u2.games=(u2.games||0)+1;u2.history=[{t:Date.now(),vs:u1?.username||"?",r:"D",s:`${g.sc.p1}-${g.sc.p2}`,lp:0},...(u2.history||[]).slice(0,19)];pU(u2)}
+  if(u1){u1.games=(u1.games||0)+1;u1.kills=(u1.kills||0)+g.mStats.p1.kills;u1.bombsPlaced=(u1.bombsPlaced||0)+g.mStats.p1.bombs;u1.pupsCollected=(u1.pupsCollected||0)+g.mStats.p1.pups;u1.history=[{t:Date.now(),vs:u2?.username||"?",r:"D",s:`${g.sc.p1}-${g.sc.p2}`,lp:0},...(u1.history||[]).slice(0,19)];pU(u1)}
+  if(u2){u2.games=(u2.games||0)+1;u2.kills=(u2.kills||0)+g.mStats.p2.kills;u2.bombsPlaced=(u2.bombsPlaced||0)+g.mStats.p2.bombs;u2.pupsCollected=(u2.pupsCollected||0)+g.mStats.p2.pups;u2.history=[{t:Date.now(),vs:u1?.username||"?",r:"D",s:`${g.sc.p1}-${g.sc.p2}`,lp:0},...(u2.history||[]).slice(0,19)];pU(u2)}
   bc(g,"matchEnd",{result:"draw",lpD:0,sc:g.sc,opp:""});
   setTimeout(()=>{pGame.delete(g.pl.p1.sock.id);pGame.delete(g.pl.p2.sock.id);pInput.delete(g.pl.p1.sock.id);pInput.delete(g.pl.p2.sock.id);games.delete(gid)},5000)}
 
@@ -98,7 +98,7 @@ io.on("connection",sock=>{
   sock.on("findMatch",({username,lp})=>{const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1);queue.push({socket:sock,username,lp});sock.emit("queueUpdate",{pos:queue.length});findMatch()});
   sock.on("cancelQueue",()=>{const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1)});
   sock.on("move",dir=>{if(dir&&dir.dx!==undefined)pInput.set(sock.id,dir)});
-  sock.on("bomb",()=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g||g.phase!=="play")return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";const e=g.ent[pid];if(!e.alive||e.bL<=0||g.bombs.some(b=>b.gx===e.gx&&b.gy===e.gy))return;e.bL--;g.bombs.push({gx:e.gx,gy:e.gy,px:e.gx*CELL+CELL/2,py:e.gy*CELL+CELL/2,range:e.range,owner:pid,timer:Date.now()+FUSE,id:Math.random().toString(36)})});
+  sock.on("bomb",()=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g||g.phase!=="play")return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";const e=g.ent[pid];if(!e.alive||e.bL<=0||g.bombs.some(b=>b.gx===e.gx&&b.gy===e.gy))return;e.bL--;g.bombs.push({gx:e.gx,gy:e.gy,px:e.gx*CELL+CELL/2,py:e.gy*CELL+CELL/2,range:e.range,owner:pid,timer:Date.now()+FUSE,id:Math.random().toString(36)});g.mStats[pid].bombs++});
   sock.on("emote",({key})=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g)return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";g.emotes.push({pid,key,time:Date.now()})});
   // Draw proposal
   sock.on("proposeDraw",()=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g||g.phase==="mEnd")return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";if(g.drawUsed[pid])return;g.drawUsed[pid]=true;g.drawProposed=pid;const other=pid==="p1"?"p2":"p1";g.pl[other].sock.emit("drawProposal",{from:g.pl[pid].name})});
