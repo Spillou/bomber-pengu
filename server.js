@@ -29,7 +29,7 @@ const saveChat = c => save("chat.json", c);
 // ── CONSTANTS ──
 const IW = 13, IH = 11, GW = IW + 2, GH = IH + 2, CELL = 52;
 const FUSE = 3400, EXDUR = 500, RTIME = 120, SDI = 400;
-const PUC = 0.4, SR = 2, MOVE_SPD = 1.15, CC = 11;
+const PUC = 0.4, SR = 2, MOVE_SPD = 3.5, CC = 11;
 const TICK = 1000 / 30;
 const T = { E: 0, W: 1, B: 2 };
 const DR = [[0, -1], [0, 1], [-1, 0], [1, 0]];
@@ -167,7 +167,7 @@ function startCD(gid) {
   const g = games.get(gid); if (!g) return;
   g.rn++; g.phase = "cd"; g.cd = 3;
   g.curArena = g.rn % 2 === 1 ? g.pl.p1.arena : g.pl.p2.arena;
-  bc(g, "roundStart", { round: g.rn, cd: 3, arena: g.curArena });
+  bc(g, "roundStart", { round: g.rn, cd: 3, arena: g.curArena, sc: g.sc });
   g.cdInt = setInterval(() => {
     g.cd--;
     bc(g, "countdown", { v: g.cd });
