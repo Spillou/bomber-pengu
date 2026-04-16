@@ -80,7 +80,7 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
 <!-- LEFT PANEL: Chat -->
 <div style="flex:1;display:flex;flex-direction:column;background:#0F2235;border-right:1px solid #1E4D7A;z-index:2">
   <div class="f1" style="padding:14px 18px 8px;font-size:14px;color:#67D4FF;flex-shrink:0">💬 CHAT GLOBAL</div>
-  <div id="gCB" style="flex:1;overflow-y:auto;padding:4px 18px;display:flex;flex-direction:column;gap:3px;min-height:0"></div>
+  <div id="gCB" style="flex:1;overflow-y:auto;padding:4px 18px;display:flex;flex-direction:column;gap:3px;min-height:0;word-break:break-all;overflow-wrap:anywhere"></div>
   <div style="padding:10px 18px;display:flex;gap:8px;flex-shrink:0;border-top:1px solid #1E4D7A33">
     <input id="gCI" placeholder="Écrire un message..." onkeydown="if(event.key==='Enter')sendGC()" style="flex:1;padding:10px 12px;font-size:14px">
     <button class="btn" style="padding:10px 16px;font-size:14px" onclick="sendGC()">→</button>
@@ -366,13 +366,19 @@ function renderMenu(){if(!me)return;const rk=gR(me.lp);const lv=getLvl(me.xp);
 
 // CHAT with clickable usernames
 function loadGC(){socket.emit("getChat",null,r=>{if(r.chat)renderGC(r.chat)})}
-function renderGC(c){const el=document.getElementById("gCB");el.innerHTML=c.length===0?'<div style="color:#7A9BBF;text-align:center;padding:24px;font-size:14px">Pas encore de messages</div>':c.map(m=>`<div style="font-size:14px;line-height:1.5">${avatarEmoji(m.a)} <span style="color:${m.rc||"#7A9BBF"};font-weight:700;font-size:10px" class="f1">${esc(m.r||"")}</span> <b style="color:#FFF;cursor:pointer" onclick="viewU('${esc(m.u)}')">${esc(m.u)}</b> <span>${esc(m.m)}</span></div>`).join("");el.scrollTop=el.scrollHeight}
+function renderGC(c){const el=document.getElementById("gCB");const isAdm=me&&["YMAC","Spillou"].includes(me.username);
+  el.innerHTML=c.length===0?'<div style="color:#7A9BBF;text-align:center;padding:24px;font-size:14px">Pas encore de messages</div>':c.map((m,i)=>{
+    if(m.deleted)return`<div style="font-size:12px;color:#7A9BBF55;font-style:italic;line-height:1.4;word-break:break-all;overflow-wrap:anywhere">message supprimé</div>`;
+    return`<div style="font-size:14px;line-height:1.5;word-break:break-all;overflow-wrap:anywhere;display:flex;align-items:baseline;gap:4px">${avatarEmoji(m.a)} <span style="color:${m.rc||"#7A9BBF"};font-weight:700;font-size:10px;flex-shrink:0" class="f1">${esc(m.r||"")}</span> <b style="color:#FFF;cursor:pointer;flex-shrink:0" onclick="viewU('${esc(m.u)}')">${esc(m.u)}</b> <span style="min-width:0">${esc(m.m)}</span>${isAdm?`<span style="cursor:pointer;opacity:.3;font-size:10px;flex-shrink:0;margin-left:auto" onclick="deleteMsg(${i})" title="Supprimer">✕</span>`:""}</div>`}).join("");el.scrollTop=el.scrollHeight}
+function deleteMsg(idx){socket.emit("deleteChat",{index:idx})}
 socket.on("chatUpdate",d=>renderGC(d.chat));
-function sendGC(){const i=document.getElementById("gCI");if(i.value.trim()&&me)socket.emit("sendChat",{username:me.username,message:i.value.trim()});i.value=""}
+function sendGC(){const i=document.getElementById("gCI");const msg=i.value.trim();if(!msg||!me){i.value="";return}
+  if(msg==="/clear"){socket.emit("clearChat");i.value="";return}
+  socket.emit("sendChat",{username:me.username,message:msg});i.value=""}
 
 // LEADERBOARD
 function loadLB(){socket.emit("getLB",null,r=>{if(r.lb)renderLB(r.lb)})}
-function renderLB(lb){document.getElementById("lbC").innerHTML=`<div class="card" style="width:560px;max-height:85vh;overflow:auto"><h2 class="f1" style="font-size:18px;text-align:center;color:#67D4FF;margin-bottom:18px">🏆 CLASSEMENT</h2>${lb.length===0?'<div style="color:#7A9BBF;text-align:center;padding:24px">Aucun joueur</div>':lb.map((e,i)=>{const rk=gR(e.e);const isMe=e.u===me?.username;return`<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:${isMe?"rgba(14,165,233,.08)":"transparent"};border:1px solid ${isMe?"#0EA5E9":"transparent"};border-radius:6px;margin-bottom:3px;cursor:pointer" onclick="viewU('${esc(e.u)}')"><div style="color:${i<3?["#FCD34D","#CBD5E1","#D97706"][i]:"#7A9BBF"};font-weight:700;font-size:15px;width:30px;text-align:center" class="f1">${i<3?["🥇","🥈","🥉"][i]:"#"+(i+1)}</div><span style="font-size:18px">${renderAvatar(e.a,18)}</span><div style="flex:1"><div style="font-weight:600;font-size:14px">${esc(e.u)}</div><span class="badge" style="background:${rk.c}22;border:1px solid ${rk.c}55;color:${rk.c};font-size:9px">${rk.full}</span></div><div style="color:#FFB347;font-weight:700;font-size:16px" class="f1">${e.e}</div></div>`}).join("")}<button class="btn2" style="width:100%;margin-top:16px" onclick="go('menu')">← RETOUR</button></div>`}
+function renderLB(lb){document.getElementById("lbC").innerHTML=`<div class="card" style="width:600px;max-height:85vh;overflow:auto"><h2 class="f1" style="font-size:18px;text-align:center;color:#67D4FF;margin-bottom:18px">🏆 CLASSEMENT</h2>${lb.length===0?'<div style="color:#7A9BBF;text-align:center;padding:24px">Aucun joueur</div>':lb.map((e,i)=>{const rk=gR(e.e);const isMe=e.u===me?.username;const lpInTier=e.e%100;return`<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:${isMe?"rgba(14,165,233,.08)":"transparent"};border:1px solid ${isMe?"#0EA5E9":"transparent"};border-radius:8px;margin-bottom:4px;cursor:pointer" onclick="viewU('${esc(e.u)}')"><div style="color:${i<3?["#FCD34D","#CBD5E1","#D97706"][i]:"#7A9BBF"};font-weight:700;font-size:16px;width:32px;text-align:center" class="f1">${i<3?["🥇","🥈","🥉"][i]:"#"+(i+1)}</div><span style="font-size:20px">${renderAvatar(e.a,20)}</span><div style="flex:1"><div style="font-weight:600;font-size:15px">${esc(e.u)}</div></div><div style="text-align:right"><span class="badge" style="background:${rk.c}22;border:1px solid ${rk.c}55;color:${rk.c};font-size:11px;padding:3px 10px">${rk.full}</span><div style="color:#FFB347;font-size:12px;margin-top:3px" class="f1">${lpInTier} LP</div></div></div>`}).join("")}<button class="btn2" style="width:100%;margin-top:16px" onclick="go('menu')">← RETOUR</button></div>`}
 function viewU(u){socket.emit("getUser",{username:u},r=>{if(r.user){profileTarget=r.user;renderProf(r.user);go("profile")}})}
 
 // PROFILE — BIGGER
