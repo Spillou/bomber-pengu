@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}body{background:#0B1E36;color:#E8F0F8;font-family:'Nunito',sans-serif;overflow:hidden;height:100vh}
+*{margin:0;padding:0;box-sizing:border-box}body{background:#0B1E36;color:#E8F0F8;font-family:'Nunito',sans-serif;overflow:auto}
 .f1{font-family:'Fredoka',sans-serif}
 input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14px;border-radius:6px;font-size:15px;width:100%;outline:none;font-family:'Nunito',sans-serif;box-sizing:border-box}
 .btn{display:inline-block;background:linear-gradient(135deg,#0EA5E9,#38BDF8);color:#FFF;border:none;padding:13px 26px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Fredoka',sans-serif;text-align:center}
@@ -330,7 +330,7 @@ socket.on("onlineCount",n=>{onlineCnt=n;const el=document.getElementById("online
 let profileTarget=null;
 const PGS=["landing","login","menu","queue","accept","shop","profile","lb","pass","cosmetics","news","admin","quests","friends","game"];
 function go(p){PGS.forEach(id=>{const el=document.getElementById("pg-"+id);if(el)el.classList.add("hidden")});const el=document.getElementById("pg-"+p);if(el)el.classList.remove("hidden");
-  const noScroll=["game","menu","queue","accept","landing","login"];
+  const noScroll=["game","menu","queue","accept"];
   document.body.style.overflow=noScroll.includes(p)?"hidden":"auto";
   document.body.style.height=noScroll.includes(p)?"100vh":"auto";
   if(p==="menu"){renderMenu();loadGC();loadLB();checkUnreadNews()}if(p==="shop")renderShop();if(p==="profile")renderProf(profileTarget||me);if(p==="lb")loadLB();if(p==="pass")renderPass();if(p==="cosmetics")renderCosmetics();if(p==="news")renderNews();if(p==="admin")renderAdmin();if(p==="quests")renderQuests();if(p==="friends")renderFriends()}}
