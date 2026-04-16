@@ -105,6 +105,10 @@ function endRound(gid,winner){const g=games.get(gid);if(!g||g.phase!=="play")ret
 
 function calcXP(won,kills,pups){let xp=won?50:15;xp+=kills*10;xp+=pups*3;xp+=10;return xp} // win=50,loss=15,per kill=10,per pup=3,participation=10
 function getLevel(xp){let lvl=1,need=100;while(xp>=need){xp-=need;lvl++;need=Math.floor(100+lvl*20)}return{level:lvl,xp,need}}
+function applyXP(u,xpGain){u.xp=(u.xp||0)+xpGain;const lv=getLevel(u.xp);u.level=lv.level;
+  // Season XP
+  if(!u.seasonData)u.seasonData={};const sid=getSeasonId();if(!u.seasonData[sid])u.seasonData[sid]={xp:0,claimed:[],hasPass:false};
+  u.seasonData[sid].xp=(u.seasonData[sid].xp||0)+xpGain}
 function checkSeasonReset(u){const sid=getSeasonId();if(u.lastSeason!==sid){
   // Save hidden MMR = current LP, preserve for placement
   u.hiddenMMR=u.lp||0;
@@ -128,8 +132,8 @@ function endMatchDraw(gid){const g=games.get(gid);if(!g)return;g.phase="mEnd";cl
 
 io.on("connection",sock=>{
   onlineCount++;io.emit("onlineCount",onlineCount);console.log("+",sock.id,onlineCount);
-  sock.on("register",({username,password},cb)=>{if(!username||!password||username.length<3)return cb({error:"Pseudo trop court"});if(gU(username))return cb({error:"Pseudo déjà pris"});const u={username,password,lp:0,wins:0,losses:0,games:0,avatar:"🐧",skin:"classic",arena:"glacier",flocons:500,ownedSkins:["classic"],ownedArenas:["glacier"],featuredBadges:[null,null,null],kills:0,bombsPlaced:0,pupsCollected:0,bestStreak:0,currentStreak:0,history:[],xp:0,level:1,ownedEmotes:["1","2","3","4"],selectedEmotes:["1","2","3","4",null]};pU(u);uLB(u);cb({user:u})});
-  sock.on("login",({username,password},cb)=>{const u=gU(username);if(!u)return cb({error:"Compte introuvable"});if(u.password!==password)return cb({error:"Mot de passe incorrect"});checkSeasonReset(u);cb({user:u})});
+  sock.on("register",({username,password},cb)=>{if(!username||!password||username.length<3)return cb({error:"Pseudo trop court"});if(gU(username))return cb({error:"Pseudo déjà pris"});const u={username,password,lp:0,wins:0,losses:0,games:0,avatar:"🐧",skin:"classic",arena:"glacier",flocons:500,ownedSkins:["classic"],ownedArenas:["glacier"],featuredBadges:[null,null,null],kills:0,bombsPlaced:0,pupsCollected:0,bestStreak:0,currentStreak:0,history:[],xp:0,level:1,ownedEmotes:["1","2","3","4"],selectedEmotes:["1","2","3","4",null],seasonData:{},lastSeason:getSeasonId()};pU(u);uLB(u);sock.data.username=username;cb({user:u})});
+  sock.on("login",({username,password},cb)=>{const u=gU(username);if(!u)return cb({error:"Compte introuvable"});if(u.password!==password)return cb({error:"Mot de passe incorrect"});checkSeasonReset(u);sock.data.username=username;cb({user:u})});
   sock.on("getUser",({username},cb)=>{const u=gU(username);if(u){checkSeasonReset(u);const{password,...safe}=u;cb({user:safe})}else cb({user:null})});
   sock.on("updateUser",({user},cb)=>{const ex=gU(user.username);if(ex){const upd={...ex,...user,password:ex.password};pU(upd);uLB(upd);cb({user:upd})}else cb({error:"Not found"})});
   sock.on("getLB",(_,cb)=>cb({lb:gLB()}));
