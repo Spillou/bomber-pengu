@@ -93,6 +93,15 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
 
 <!-- QUEUE -->
 <div id="pg-queue" class="page hidden"><div class="card" style="text-align:center"><div style="font-size:48px;margin-bottom:14px">⏳</div><h2 class="f1" style="font-size:20px;color:#67D4FF;margin-bottom:8px">RECHERCHE D'ADVERSAIRE...</h2><div style="color:#7A9BBF;margin-bottom:22px;font-size:15px" id="qI">En file d'attente</div><button class="btn2" onclick="cancelQ()">ANNULER</button></div></div>
+<!-- MATCH ACCEPT -->
+<div id="pg-accept" class="page hidden"><div class="card" style="text-align:center;max-width:420px">
+<div style="font-size:48px;margin-bottom:8px">⚔️</div>
+<h2 class="f1" style="font-size:20px;color:#34D399;margin-bottom:14px">MATCH TROUVÉ !</h2>
+<div id="acceptOpp" style="margin-bottom:16px"></div>
+<div id="acceptTimer" class="f1" style="font-size:36px;color:#FBBF24;margin-bottom:16px">10</div>
+<div style="background:#1E4D7A;border-radius:4px;height:6px;overflow:hidden;margin-bottom:18px"><div id="acceptBar" style="height:100%;background:#34D399;width:100%;transition:width 1s linear"></div></div>
+<div style="display:flex;gap:10px;justify-content:center"><button class="btn" style="padding:14px 36px;font-size:16px" onclick="doAcceptMatch()">✓ ACCEPTER</button><button class="btn2" style="padding:14px 24px" onclick="doDeclineMatch()">✕ REFUSER</button></div>
+</div></div>
 
 <!-- SHOP -->
 <div id="pg-shop" class="page hidden" style="align-items:flex-start;padding:24px"><div style="max-width:800px;width:100%;margin:0 auto" id="shopC"></div></div>
@@ -295,7 +304,7 @@ socket.on("onlineCount",n=>{onlineCnt=n;const el=document.getElementById("online
 
 // PAGES
 let profileTarget=null;
-const PGS=["landing","login","menu","queue","shop","profile","lb","pass","cosmetics","news","admin","game"];
+const PGS=["landing","login","menu","queue","accept","shop","profile","lb","pass","cosmetics","news","admin","game"];
 function go(p){PGS.forEach(id=>{const el=document.getElementById("pg-"+id);if(el)el.classList.add("hidden")});const el=document.getElementById("pg-"+p);if(el)el.classList.remove("hidden");
   document.body.style.overflow=p==="game"?"hidden":"auto";
   // Apply zoom to all pages except game
@@ -543,7 +552,38 @@ function updateAdminVisibility(){socket.emit("admin_check",null,r=>{const b=docu
 function findMatch(){socket.emit("findMatch",{username:me.username,lp:me.lp||0});go("queue")}
 function cancelQ(){socket.emit("cancelQueue");go("menu")}
 socket.on("queueUpdate",d=>{document.getElementById("qI").textContent=`Position: ${d.pos}`});
-socket.on("matchFound",d=>{myRole=d.you;opp=d.opp;curAr=d.me?.arena||"glacier";score={p1:0,p2:0};roundNum=0;stats={b:1,r:2,s:1,k:false};drawUsed=false;go("game");updDrawBtn();buildEmoteBar()});
+
+// MATCH PROPOSAL SYSTEM
+let curProposalId=null,acceptCountdown=null;
+socket.on("matchProposal",d=>{
+  curProposalId=d.proposalId;
+  const o=d.opp;const rk=gR(o.lp);
+  document.getElementById("acceptOpp").innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px">
+      <div style="font-size:36px">${avatarEmoji(o.avatar)}</div>
+      <div><div style="font-size:18px;font-weight:700" class="f1">${esc(o.username)}</div>
+      <span class="badge" style="background:${rk.c}22;border:1px solid ${rk.c}55;color:${rk.c}">${rk.full}</span></div>
+    </div>`;
+  go("accept");
+  // Start 10s countdown
+  let t=10;
+  document.getElementById("acceptTimer").textContent=t;
+  document.getElementById("acceptBar").style.width="100%";
+  if(acceptCountdown)clearInterval(acceptCountdown);
+  acceptCountdown=setInterval(()=>{t--;document.getElementById("acceptTimer").textContent=Math.max(0,t);document.getElementById("acceptBar").style.width=Math.max(0,t*10)+"%";if(t<=0)clearInterval(acceptCountdown)},1000);
+});
+socket.on("matchAccepted",d=>{
+  // Other player accepted — update UI
+  const el=document.getElementById("acceptTimer");if(el)el.innerHTML=`<span style="color:#34D399;font-size:16px">✓ En attente...</span>`;
+});
+socket.on("matchDeclined",d=>{
+  if(acceptCountdown)clearInterval(acceptCountdown);curProposalId=null;go("menu");
+});
+function doAcceptMatch(){if(!curProposalId)return;socket.emit("acceptMatch",{proposalId:curProposalId});
+  const el=document.getElementById("acceptTimer");if(el)el.innerHTML=`<span style="color:#34D399;font-size:16px">✓ Accepté ! En attente...</span>`}
+function doDeclineMatch(){if(!curProposalId)return;socket.emit("declineMatch",{proposalId:curProposalId});curProposalId=null;if(acceptCountdown)clearInterval(acceptCountdown);go("menu")}
+
+socket.on("matchFound",d=>{if(acceptCountdown)clearInterval(acceptCountdown);curProposalId=null;myRole=d.you;opp=d.opp;curAr=d.me?.arena||"glacier";score={p1:0,p2:0};roundNum=0;stats={b:1,r:2,s:1,k:false};drawUsed=false;go("game");updDrawBtn();buildEmoteBar()});
 socket.on("roundStart",d=>{roundNum=d.round;curAr=d.arena||"glacier";if(d.sc)score=d.sc;showOv(`<div class="f1" style="font-size:18px;color:#7A9BBF;letter-spacing:4px;margin-bottom:8px">ROUND ${d.round}</div><div class="f1" style="font-size:80px;font-weight:700;color:#67D4FF;text-shadow:0 0 40px #0EA5E9">${d.cd}</div>`)});
 socket.on("countdown",d=>{if(d.v>0)showOv(`<div class="f1" style="font-size:18px;color:#7A9BBF;letter-spacing:4px;margin-bottom:8px">ROUND ${roundNum}</div><div class="f1" style="font-size:80px;font-weight:700;color:#67D4FF;text-shadow:0 0 40px #0EA5E9">${d.v}</div>`);else showOv(`<div class="f1" style="font-size:80px;font-weight:700;color:#34D399;text-shadow:0 0 40px #34D399">GO!</div>`)});
 socket.on("roundBegin",d=>{grid=d.grid;ent=d.ent;bombs=[];pups=[];expl=[];emotes=[];particles=[];stats={b:1,r:2,s:1,k:false};timer=120;sdeath=false;visPos={p1:{px:ent.p1.px,py:ent.p1.py},p2:{px:ent.p2.px,py:ent.p2.py}};hideOv();updSc();updSt();startMv()});
@@ -556,7 +596,15 @@ socket.on("pickup",d=>{spawnP(d.x*CELL+CELL/2,d.y*CELL+CELL/2,6,"#FCD34D")});
 socket.on("suddenDeath",()=>{sdeath=true;updSc()});
 socket.on("wallPlace",d=>{if(grid&&grid[d.y])grid[d.y][d.x]=1;spawnP(d.x*CELL+CELL/2,d.y*CELL+CELL/2,5,"#1E4D7A")});
 socket.on("roundEnd",d=>{stopMv();score=d.sc;const w=d.winner===myRole;showOv(`<div class="f1" style="font-size:40px;font-weight:700;color:${w?"#34D399":d.winner==="draw"?"#FBBF24":"#F87171"};text-shadow:0 0 30px ${w?"#34D399":"#F87171"}">${w?"ROUND GAGNÉ !":d.winner==="draw"?"ÉGALITÉ":"ROUND PERDU"}</div>`);updSc()});
-socket.on("matchEnd",d=>{stopMv();const w=d.result==="win",dr=d.result==="draw";const col=w?"#34D399":dr?"#FBBF24":"#F87171";showOv(`<div style="font-size:56px">${w?"🏆":dr?"🤝":"💀"}</div><div class="f1" style="font-size:30px;font-weight:700;color:${col}">${w?"VICTOIRE !":dr?"MATCH NUL":"DÉFAITE"}</div><div style="display:flex;gap:10px;font-size:24px;font-weight:700" class="f1"><span style="color:#34D399">${score.p1}</span><span style="color:#7A9BBF">-</span><span style="color:#F87171">${score.p2}</span></div><div style="display:flex;gap:16px;align-items:center"><div class="f1" style="color:${(d.lpD||0)>=0?"#34D399":"#F87171"};font-size:20px;font-weight:700">${(d.lpD||0)>=0?"+":""}${d.lpD||0} LP</div>${d.xp?`<div class="f1" style="color:#A78BFA;font-size:18px;font-weight:700">+${d.xp} XP</div>`:""}</div><button class="btn" style="margin-top:12px;padding:14px 36px;font-size:16px" onclick="backLobby()">RETOURNER AU LOBBY</button>`);socket.emit("login",{username:me.username,password:me.password},r=>{if(r.user)me=r.user})});
+socket.on("matchEnd",d=>{stopMv();const w=d.result==="win",dr=d.result==="draw";const col=w?"#34D399":dr?"#FBBF24":"#F87171";
+  // Calculate old XP level for animation
+  const oldXP=(me?.xp||0);const newXP=oldXP+(d.xp||0);const oldLv=getLvl(oldXP);const newLv=getLvl(newXP);
+  const xpBarId="xpBarEnd_"+Date.now();
+  showOv(`<div style="font-size:56px">${w?"🏆":dr?"🤝":"💀"}</div><div class="f1" style="font-size:30px;font-weight:700;color:${col}">${w?"VICTOIRE !":dr?"MATCH NUL":"DÉFAITE"}</div><div style="display:flex;gap:10px;font-size:24px;font-weight:700" class="f1"><span style="color:#34D399">${score.p1}</span><span style="color:#7A9BBF">-</span><span style="color:#F87171">${score.p2}</span></div><div style="display:flex;gap:16px;align-items:center"><div class="f1" style="color:${(d.lpD||0)>=0?"#34D399":"#F87171"};font-size:20px;font-weight:700">${(d.lpD||0)>=0?"+":""}${d.lpD||0} LP</div>${d.xp?`<div class="f1" style="color:#A78BFA;font-size:18px;font-weight:700">+${d.xp} XP</div>`:""}</div>
+${d.xp?`<div style="width:280px;margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:11px;color:#A78BFA;margin-bottom:3px" class="f1"><span>Nv.${newLv.level}</span><span>${newLv.xp}/${newLv.need}</span></div><div style="background:#1E4D7A;border-radius:3px;height:8px;overflow:hidden"><div id="${xpBarId}" style="height:100%;background:linear-gradient(90deg,#A78BFA,#C4B5FD);border-radius:3px;width:${Math.round(oldLv.xp/oldLv.need*100)}%;transition:width 1.5s ease-out"></div></div></div>`:""}<button class="btn" style="margin-top:14px;padding:14px 36px;font-size:16px" onclick="backLobby()">RETOURNER AU LOBBY</button>`);
+  // Animate XP bar after short delay
+  if(d.xp){setTimeout(()=>{const bar=document.getElementById(xpBarId);if(bar)bar.style.width=Math.round(newLv.xp/newLv.need*100)+"%"},200)}
+  socket.emit("login",{username:me.username,password:me.password},r=>{if(r.user)me=r.user})});
 socket.on("gameChatMsg",d=>{const el=document.getElementById("igCB");if(!el)return;const div=document.createElement("div");div.innerHTML=`<span style="color:${d.pid===myRole?"#67D4FF":"#F87171"};font-weight:700">${esc(d.username)}:</span> ${esc(d.message)}`;el.appendChild(div);while(el.children.length>8)el.removeChild(el.firstChild);el.scrollTop=el.scrollHeight});
 // Draw
 socket.on("drawProposal",d=>{document.getElementById("drawFrom").textContent=`${d.from} propose un match nul`;document.getElementById("drawPopup").classList.remove("hidden")});
@@ -575,8 +623,8 @@ function updSc(){const oR=myRole==="p1"?"p2":"p1";const tc=timer<=10?"#EF4444":t
 function updSt(){document.getElementById("stBar").innerHTML=[{i:"💣",l:"Bombes",v:stats.b,c:"#FB923C"},{i:"🔥",l:"Portée",v:stats.r,c:"#EF4444"},{i:"⚡",l:"Vitesse",v:stats.s,c:"#FBBF24"}].map(s=>`<div style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:rgba(255,255,255,.05);border-radius:5px"><span style="font-size:14px">${s.i}</span><div><div style="font-size:8px;color:#7A9BBF" class="f1">${s.l}</div><div style="font-size:14px;font-weight:700;color:${s.c}" class="f1">${s.v}</div></div></div>`).join("")+(stats.k?'<div style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:rgba(52,211,153,.1);border-radius:5px;border:1px solid rgba(52,211,153,.3)"><span style="font-size:14px">👟</span><div class="f1" style="font-size:10px;font-weight:700;color:#34D399">KICK</div></div>':"")}
 
 // INPUT
-document.addEventListener("keydown",e=>{if(e.target.tagName==="INPUT")return;keys[e.key]=true;if(e.key===" "){e.preventDefault();socket.emit("bomb")}if(["1","2","3","4","5"].includes(e.key)){const slot=parseInt(e.key)-1;const sel=(me?.selectedEmotes||[]).filter(Boolean);const k=sel[slot];if(k)socket.emit("emote",{key:k})}});
-document.addEventListener("keyup",e=>{if(e.target.tagName==="INPUT")return;keys[e.key]=false});
+document.addEventListener("keydown",e=>{if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"||e.target.isContentEditable)return;keys[e.key]=true;if(e.key===" "){e.preventDefault();socket.emit("bomb")}if(["1","2","3","4","5"].includes(e.key)){const slot=parseInt(e.key)-1;const sel=(me?.selectedEmotes||[]).filter(Boolean);const k=sel[slot];if(k)socket.emit("emote",{key:k})}});
+document.addEventListener("keyup",e=>{if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"||e.target.isContentEditable)return;keys[e.key]=false});
 function startMv(){stopMv();moveInt=setInterval(()=>{let dx=0,dy=0;if(keys.ArrowUp)dy=-1;else if(keys.ArrowDown)dy=1;else if(keys.ArrowLeft)dx=-1;else if(keys.ArrowRight)dx=1;socket.emit("move",{dx,dy})},33)}
 function stopMv(){if(moveInt){clearInterval(moveInt);moveInt=null}}
 
