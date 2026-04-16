@@ -71,7 +71,7 @@ const otherBlock=bombs.some(ob=>{if(ob.id===bomb.id)return false;const k=g.kicke
 const queue=[],games=new Map(),pGame=new Map(),pInput=new Map();
 let onlineCount=0;
 
-function findMatch(){if(queue.length<2)return;queue.sort((a,b)=>a.lp-b.lp);let bi=0,bd=Infinity;for(let i=0;i<queue.length-1;i++){const d=Math.abs(queue[i].lp-queue[i+1].lp);if(d<bd){bd=d;bi=i}}const p1=queue.splice(bi+1,1)[0],p2=queue.splice(bi,1)[0];createGame(p1,p2)}
+function findMatch(){if(queue.length<2)return;queue.sort((a,b)=>a.lp-b.lp);let bi=-1,bd=Infinity;for(let i=0;i<queue.length-1;i++){if(queue[i].username===queue[i+1].username)continue;const d=Math.abs(queue[i].lp-queue[i+1].lp);if(d<bd){bd=d;bi=i}}if(bi<0)return;const p1=queue.splice(bi+1,1)[0],p2=queue.splice(bi,1)[0];createGame(p1,p2)}
 
 function createGame(p1,p2){const gid=`g_${Date.now()}_${Math.random().toString(36).substr(2,4)}`;const u1=gU(p1.username),u2=gU(p2.username);
   const g={id:gid,pl:{p1:{sock:p1.socket,name:p1.username,lp:p1.lp,skin:u1?.skin||"classic",arena:u1?.arena||"glacier",avatar:u1?.avatar||"🐧"},p2:{sock:p2.socket,name:p2.username,lp:p2.lp,skin:u2?.skin||"classic",arena:u2?.arena||"glacier",avatar:u2?.avatar||"🐧"}},sc:{p1:0,p2:0},rn:0,phase:"cd",cd:3,grid:null,ent:null,bombs:[],expl:[],pups:[],kicked:[],emotes:[],sd:false,sdO:[],sdI:0,sdL:0,rStart:0,tick:null,cdInt:null,curArena:"glacier",drawProposed:null,drawUsed:{p1:false,p2:false},mStats:{p1:{bombs:0,pups:0,kills:0},p2:{bombs:0,pups:0,kills:0}}};
@@ -156,7 +156,14 @@ io.on("connection",sock=>{
   sock.on("getChat",(_,cb)=>cb({chat:gCh()}));
   sock.on("sendChat",({username,message})=>{const u=gU(username);if(!u||!message?.trim())return;const c=gCh();c.push({u:username,m:message.trim(),t:Date.now(),r:rN(u.lp),rc:rC(u.lp),a:u.avatar||"🐧"});if(c.length>30)c.splice(0,c.length-30);sCh(c);io.emit("chatUpdate",{chat:c})});
   sock.on("gameChat",({message})=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g)return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";bc(g,"gameChatMsg",{username:g.pl[pid].name,message:message?.trim(),pid})});
-  sock.on("findMatch",({username,lp})=>{const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1);queue.push({socket:sock,username,lp});sock.emit("queueUpdate",{pos:queue.length});findMatch()});
+  sock.on("findMatch",({username,lp})=>{
+    // Remove this socket from queue if already there
+    const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1);
+    // Prevent same username from being in queue twice (different tab)
+    const dup=queue.findIndex(q=>q.username===username);if(dup>=0)queue.splice(dup,1);
+    // Prevent queueing if already in a game
+    if(pGame.has(sock.id)){sock.emit("queueUpdate",{pos:0});return}
+    queue.push({socket:sock,username,lp});sock.emit("queueUpdate",{pos:queue.length});findMatch()});
   sock.on("cancelQueue",()=>{const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1)});
   sock.on("getSeasonInfo",(_,cb)=>cb({seasonId:getSeasonId(),seasonEnd:getSeasonEnd(),rewards:SEASON_REWARDS}));
   sock.on("getShopRotation",(_,cb)=>{
