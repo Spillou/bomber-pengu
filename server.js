@@ -30,26 +30,26 @@ function getTier(seasonXP){let t=0,remaining=seasonXP;while(t<50&&remaining>=tie
 // Rewards per tier: [tier, type, value, price (0=free)]
 const SEASON_REWARDS=[
   {tier:1,type:"flocons",value:50,free:true},
-  {tier:3,type:"emote",value:"7",free:false,price:50}, // 🔥
+  {tier:3,type:"emote",value:"10",free:false}, // 💣 BOOM
   {tier:5,type:"flocons",value:100,free:true},
-  {tier:8,type:"skin",value:"fire",free:false,price:100},
+  {tier:8,type:"skin",value:"captain",free:false},
   {tier:10,type:"flocons",value:150,free:true},
-  {tier:13,type:"emote",value:"8",free:false,price:75}, // 😎
+  {tier:12,type:"avatar",value:"penguin_cool",free:false},
   {tier:15,type:"flocons",value:200,free:true},
-  {tier:18,type:"arena",value:"volcano",free:false,price:150},
-  {tier:20,type:"flocons",value:250,free:true},
-  {tier:23,type:"emote",value:"9",free:false,price:100}, // 🐧
+  {tier:18,type:"arena",value:"underwater",free:false},
+  {tier:20,type:"skin",value:"samurai",free:true},
+  {tier:23,type:"emote",value:"13",free:false}, // ⚡ ZAP
   {tier:25,type:"flocons",value:300,free:true},
-  {tier:28,type:"skin",value:"toxic",free:false,price:150},
+  {tier:28,type:"avatar",value:"dragon_baby",free:false},
   {tier:30,type:"flocons",value:400,free:true},
-  {tier:33,type:"arena",value:"forest",free:false,price:200},
-  {tier:35,type:"flocons",value:500,free:true},
-  {tier:38,type:"skin",value:"royal",free:false,price:250},
+  {tier:33,type:"arena",value:"cyberpunk",free:false},
+  {tier:35,type:"skin",value:"ninja",free:true},
+  {tier:38,type:"emote",value:"20",free:false}, // 🐉 DRAGON
   {tier:40,type:"flocons",value:700,free:true},
-  {tier:43,type:"skin",value:"shadow",free:false,price:300},
-  {tier:45,type:"flocons",value:1000,free:true},
-  {tier:48,type:"arena",value:"crystal",free:false,price:400},
-  {tier:50,type:"skin",value:"golden",free:true}, // Ultimate free reward
+  {tier:43,type:"avatar",value:"dragon",free:false},
+  {tier:45,type:"skin",value:"cyber",free:true},
+  {tier:48,type:"arena",value:"neon_city",free:false},
+  {tier:50,type:"skin",value:"rainbow",free:true},
 ];
 function rN(lp){if(lp>=2000)return"Maître";const t=Math.min(4,Math.floor(lp/400));return`${TN[t]} ${4-Math.floor((lp-t*400)/100)}`}
 function rC(lp){if(lp>=2000)return TC[5];return TC[Math.min(4,Math.floor(lp/400))]}
@@ -143,7 +143,13 @@ function endMatchDraw(gid){const g=games.get(gid);if(!g)return;g.phase="mEnd";cl
 io.on("connection",sock=>{
   onlineCount++;io.emit("onlineCount",onlineCount);console.log("+",sock.id,onlineCount);
   sock.on("register",({username,password},cb)=>{if(!username||!password||username.length<3)return cb({error:"Pseudo trop court"});if(gU(username))return cb({error:"Pseudo déjà pris"});const u={username,password,lp:0,wins:0,losses:0,games:0,avatar:"penguin",skin:"classic",arena:"glacier",flocons:500,ownedSkins:["classic"],ownedArenas:["glacier"],ownedAvatars:["penguin","polar","seal"],featuredBadges:[null,null,null],kills:0,bombsPlaced:0,pupsCollected:0,bestStreak:0,currentStreak:0,history:[],xp:0,level:1,ownedEmotes:["1","2","3","4"],selectedEmotes:["1","2","3","4",null],seasonData:{},lastSeason:getSeasonId()};pU(u);uLB(u);sock.data.username=username;cb({user:u})});
-  sock.on("login",({username,password},cb)=>{const u=gU(username);if(!u)return cb({error:"Compte introuvable"});if(u.password!==password)return cb({error:"Mot de passe incorrect"});if(u.banned)return cb({error:"Compte banni. Contactez un administrateur."});checkSeasonReset(u);sock.data.username=username;u.lastSeen=Date.now();pU(u);cb({user:u})});
+  sock.on("login",({username,password},cb)=>{const u=gU(username);if(!u)return cb({error:"Compte introuvable"});if(u.password!==password)return cb({error:"Mot de passe incorrect"});if(u.banned)return cb({error:"Compte banni. Contactez un administrateur."});
+    // Migrate old emoji avatars to new ID system
+    if(!u.ownedAvatars)u.ownedAvatars=["penguin","polar","seal"];
+    if(u.avatar&&u.avatar.length>3){u.avatar="penguin"}// emoji was set, reset to default ID
+    if(!u.ownedEmotes)u.ownedEmotes=["1","2","3","4"];
+    if(!u.selectedEmotes)u.selectedEmotes=["1","2","3","4",null];
+    checkSeasonReset(u);sock.data.username=username;u.lastSeen=Date.now();pU(u);cb({user:u})});
   sock.on("getUser",({username},cb)=>{const u=gU(username);if(u){checkSeasonReset(u);const{password,...safe}=u;cb({user:safe})}else cb({user:null})});
   sock.on("updateUser",({user},cb)=>{const ex=gU(user.username);if(ex){const upd={...ex,...user,password:ex.password};pU(upd);uLB(upd);cb({user:upd})}else cb({error:"Not found"})});
   sock.on("getLB",(_,cb)=>cb({lb:gLB()}));
@@ -154,17 +160,18 @@ io.on("connection",sock=>{
   sock.on("cancelQueue",()=>{const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1)});
   sock.on("getSeasonInfo",(_,cb)=>cb({seasonId:getSeasonId(),seasonEnd:getSeasonEnd(),rewards:SEASON_REWARDS}));
   sock.on("getShopRotation",(_,cb)=>{
-    // Static pools of all available cosmetic IDs (excluding default free)
     const SKIN_POOL=["fire","toxic","royal","golden","shadow","captain","military","samurai","ninja","wizard","chef","astronaut","pirate","cowboy","hockey","disco","ghost","zombie","robot","cyber","neon","rainbow","crystal_skin","frost","inferno_king"];
     const ARENA_POOL=["volcano","forest","crystal","desert","space","underwater","candy","haunted","neon_city","cyberpunk","temple","ruins"];
     const EMOTE_POOL=["6","7","8","9","10","11","12","13","14","15","16","17","18","19","20"];
+    const AVATAR_POOL=["whale","dolphin","snowman","snowflake","ice","shark","octopus","squid","fish","otter","crab","penguin_cool","fox","wolf","tiger","dragon_baby","ghost_av","unicorn","alien","robot_av","dragon","fire_av","star_av","diamond","crown_av"];
     const sid=getDailyShopId();
     cb({
       endMs:getShopEndMs(),
       shopId:sid,
       skins:shopRotation(SKIN_POOL,4,sid),
       arenas:shopRotation(ARENA_POOL,3,sid+"a"),
-      emotes:shopRotation(EMOTE_POOL,5,sid+"e")
+      emotes:shopRotation(EMOTE_POOL,5,sid+"e"),
+      avatars:shopRotation(AVATAR_POOL,4,sid+"v")
     });
   });
   sock.on("claimReward",({tier},cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}const sid=getSeasonId();if(!u.seasonData)u.seasonData={};if(!u.seasonData[sid])u.seasonData[sid]={xp:0,claimed:[],hasPass:false};const info=getTier(u.seasonData[sid].xp);const r=SEASON_REWARDS.find(x=>x.tier===tier);if(!r){cb({error:"Palier introuvable"});return}if(info.tier<tier){cb({error:"Palier pas encore atteint"});return}if(u.seasonData[sid].claimed.includes(tier)){cb({error:"Déjà réclamé"});return}if(!r.free&&!u.seasonData[sid].hasPass){cb({error:"Passe de combat requis"});return}
@@ -172,7 +179,8 @@ io.on("connection",sock=>{
     if(r.type==="flocons")u.flocons=(u.flocons||0)+r.value;
     else if(r.type==="skin"&&!u.ownedSkins.includes(r.value))u.ownedSkins.push(r.value);
     else if(r.type==="arena"&&!u.ownedArenas.includes(r.value))u.ownedArenas.push(r.value);
-    else if(r.type==="emote"&&!u.ownedEmotes.includes(r.value))u.ownedEmotes.push(r.value);
+    else if(r.type==="emote"&&!(u.ownedEmotes||[]).includes(r.value)){if(!u.ownedEmotes)u.ownedEmotes=["1","2","3","4"];u.ownedEmotes.push(r.value)}
+    else if(r.type==="avatar"){if(!u.ownedAvatars)u.ownedAvatars=["penguin","polar","seal"];if(!u.ownedAvatars.includes(r.value))u.ownedAvatars.push(r.value)}
     u.seasonData[sid].claimed.push(tier);pU(u);cb({user:u})});
   sock.on("buyBattlePass",(_,cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}const PASS_PRICE=500;if((u.flocons||0)<PASS_PRICE){cb({error:"Pas assez de Flocons"});return}const sid=getSeasonId();if(!u.seasonData)u.seasonData={};if(!u.seasonData[sid])u.seasonData[sid]={xp:0,claimed:[],hasPass:false};if(u.seasonData[sid].hasPass){cb({error:"Passe déjà acheté"});return}u.flocons-=PASS_PRICE;u.seasonData[sid].hasPass=true;pU(u);cb({user:u})});
   sock.on("move",dir=>{if(dir&&dir.dx!==undefined)pInput.set(sock.id,dir)});
