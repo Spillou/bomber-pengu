@@ -67,29 +67,33 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
 <div style="text-align:center;margin-top:12px"><button style="background:none;border:none;color:#7A9BBF;font-size:12px;cursor:pointer" onclick="go('landing')">← Accueil</button></div></div></div>
 
 <!-- MENU -->
-<div id="pg-menu" class="hidden" style="min-height:100vh;display:flex;background:radial-gradient(ellipse at 30% 20%,#15334D,#0B1E36);position:relative">
-<!-- Top-right bar: admin only -->
-<div style="position:absolute;top:14px;right:18px;display:flex;gap:8px;z-index:20">
-  <button id="adminBtnTop" class="btn2" style="padding:8px 14px;font-size:12px;font-weight:700;display:none;background:linear-gradient(135deg,#F59E0B22,#F59E0B11);border-color:#F59E0B55;color:#F59E0B" onclick="go('admin')">⚙️ ADMIN</button>
+<div id="pg-menu" class="hidden" style="height:100vh;display:flex;background:radial-gradient(ellipse at 30% 20%,#15334D,#0B1E36);position:relative;overflow:hidden">
+<!-- Admin top-right -->
+<div style="position:absolute;top:12px;right:14px;z-index:20">
+  <button id="adminBtnTop" class="btn2" style="padding:6px 12px;font-size:11px;font-weight:700;display:none;background:linear-gradient(135deg,#F59E0B22,#F59E0B11);border-color:#F59E0B55;color:#F59E0B" onclick="go('admin')">⚙️ ADMIN</button>
 </div>
-<div style="flex:0 0 400px;display:flex;flex-direction:column;padding:16px;border-right:1px solid #1E4D7A;background:#102840;gap:5px;overflow:hidden;max-height:100vh">
-<div style="text-align:center;margin-bottom:2px"><div style="font-size:30px">🐧</div><h1 class="f1" style="font-size:15px;color:#67D4FF">BOMBER PENGU</h1><div id="onlineInd" style="color:#34D399;font-size:10px;margin-top:1px" class="f1"></div></div>
-<div id="pCard" style="background:#0B1E36;border-radius:10px;padding:12px;border:1px solid #1E4D7A;cursor:pointer" onclick="profileTarget=me;go('profile')"></div>
+<!-- LEFT: Chat -->
+<div style="flex:1;display:flex;flex-direction:column;padding:18px 20px;min-width:0;background:#102840;border-right:1px solid #1E4D7A">
+<h2 class="f1" style="font-size:14px;color:#67D4FF;margin-bottom:10px">💬 CHAT GLOBAL</h2>
+<div id="gCB" style="flex:1;background:#0B1E36;border-radius:8px;border:1px solid #1E4D7A;padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;min-height:0"></div>
+<div style="display:flex;gap:8px;margin-top:10px;flex-shrink:0"><input id="gCI" placeholder="Écrire un message..." onkeydown="if(event.key==='Enter')sendGC()" style="font-size:14px;flex:1"><button class="btn" style="padding:10px 18px;font-size:14px" onclick="sendGC()">→</button></div>
+<button class="btn2" style="background:transparent;color:#7A9BBF;font-size:10px;padding:4px;margin-top:8px;flex-shrink:0" onclick="logout()">Déconnexion</button>
+</div>
+<!-- RIGHT: Profile + Buttons -->
+<div style="flex:0 0 380px;display:flex;flex-direction:column;padding:18px;gap:8px;overflow-y:auto">
+<div id="pCard" style="background:#15334D;border-radius:12px;padding:14px;border:1px solid #1E4D7A;cursor:pointer" onclick="profileTarget=me;go('profile')"></div>
 <div id="mResult" style="display:none;border-radius:8px;padding:8px;text-align:center"></div>
-<button class="btn" style="width:100%;padding:12px;font-size:15px" onclick="findMatch()">⚔️ MATCH RANKED</button>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
-  <button class="btn2" style="padding:10px;font-size:12px" onclick="go('cosmetics')">🎨 Personnalisation</button>
-  <button class="btn2" style="padding:10px;font-size:12px" onclick="go('shop')">🏪 Boutique</button>
-  <button class="btn2" style="padding:10px;font-size:12px" onclick="go('lb')">🏆 Classement</button>
-  <button class="btn2" style="padding:10px;font-size:12px;background:linear-gradient(135deg,#A78BFA22,#A78BFA11);border-color:#A78BFA55;color:#A78BFA" onclick="go('pass')">🎫 Passe de Combat</button>
+<div style="display:flex;flex-direction:column;gap:6px;flex:1">
+  <button class="btn" style="width:100%;padding:14px;font-size:17px;border-radius:12px;letter-spacing:1px" onclick="go('cosmetics')">🎨 Personnalisation</button>
+  <button class="btn" style="width:100%;padding:14px;font-size:17px;border-radius:12px;letter-spacing:1px" onclick="go('shop')">🏪 Boutique</button>
+  <button class="btn" style="width:100%;padding:14px;font-size:17px;border-radius:12px;letter-spacing:1px;position:relative" onclick="go('news')">📰 NEWS<span id="newsBadge2" style="display:none;position:absolute;top:8px;right:12px;background:#EF4444;color:#FFF;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">1</span></button>
+  <button class="btn" style="width:100%;padding:14px;font-size:17px;border-radius:12px;letter-spacing:1px" onclick="go('lb')">🏆 Classement</button>
+  <button class="btn" style="width:100%;padding:16px;font-size:19px;border-radius:12px;letter-spacing:2px;background:linear-gradient(135deg,#0EA5E9,#38BDF8);box-shadow:0 4px 20px rgba(14,165,233,.4)" onclick="findMatch()">⚔️ JOUER</button>
 </div>
-<button class="btn2" style="width:100%;padding:10px;font-size:12px;background:linear-gradient(135deg,#67D4FF11,#67D4FF05);border-color:#67D4FF55;color:#67D4FF" onclick="go('news')">📰 NEWS<span id="newsBadge2" style="display:none;background:#EF4444;color:#FFF;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:6px">1</span></button>
-<button class="btn2" style="width:100%;background:transparent;color:#7A9BBF;font-size:10px;padding:4px;margin-top:auto;flex-shrink:0" onclick="logout()">Déconnexion</button>
+<button class="btn2" style="width:100%;padding:10px;font-size:12px;border-radius:10px;background:linear-gradient(135deg,#A78BFA22,#A78BFA11);border-color:#A78BFA55;color:#A78BFA" onclick="go('pass')">🎫 Passe de Combat</button>
+<div id="onlineInd" style="color:#34D399;font-size:10px;text-align:center;flex-shrink:0" class="f1"></div>
 </div>
-<div style="flex:1;display:flex;flex-direction:column;padding:22px;min-width:0;max-height:100vh;overflow:hidden">
-<h2 class="f1" style="font-size:15px;color:#67D4FF;margin-bottom:12px">💬 CHAT GLOBAL</h2>
-<div id="gCB" style="flex:1;background:#0B1E36;border-radius:8px;border:1px solid #1E4D7A;padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px;min-height:200px;max-height:calc(100vh - 120px)"></div>
-<div style="display:flex;gap:8px;flex-shrink:0"><input id="gCI" placeholder="Écrire un message..." onkeydown="if(event.key==='Enter')sendGC()" style="font-size:15px"><button class="btn" style="padding:12px 20px" onclick="sendGC()">→</button></div></div></div>
+</div>
 
 <!-- QUEUE -->
 <div id="pg-queue" class="page hidden"><div class="card" style="text-align:center"><div style="font-size:48px;margin-bottom:14px">⏳</div><h2 class="f1" style="font-size:20px;color:#67D4FF;margin-bottom:8px">RECHERCHE D'ADVERSAIRE...</h2><div style="color:#7A9BBF;margin-bottom:22px;font-size:15px" id="qI">En file d'attente</div><button class="btn2" onclick="cancelQ()">ANNULER</button></div></div>
@@ -482,13 +486,23 @@ function markNewsRead(){if(latestNewsId){try{localStorage.setItem("bp_lastNews",
 function renderNews(){if(!me)return;
   socket.emit("getNews",null,r=>{const news=r.news||[];if(news.length>0)latestNewsId=news[0].id;markNewsRead();
     document.getElementById("newsC").innerHTML=`
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><h2 class="f1" style="font-size:22px;color:#67D4FF;margin:0">📰 NEWS</h2><button class="btn2" style="padding:8px 16px;font-size:13px" onclick="go('menu')">← RETOUR</button></div>
-${news.length===0?'<div style="color:#7A9BBF;text-align:center;padding:40px;background:#15334D;border-radius:10px">Aucune actualité pour le moment</div>':news.map(n=>`
-<div style="background:#15334D;border:1px solid #1E4D7A;border-radius:10px;padding:20px;margin-bottom:14px">
-  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><h3 class="f1" style="color:#67D4FF;font-size:18px;margin:0">${esc(n.title)}</h3><span style="color:#7A9BBF;font-size:11px" class="f1">${new Date(n.createdAt).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</span></div>
-  <div style="color:#E8F0F8;font-size:14px;line-height:1.6">${n.html}</div>
-  <div style="color:#7A9BBF;font-size:10px;margin-top:10px" class="f1">Par ${esc(n.author)}</div>
-</div>`).join("")}`})}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px"><h2 class="f1" style="font-size:22px;color:#67D4FF;margin:0">📰 NEWS</h2><button class="btn2" style="padding:8px 16px;font-size:13px" onclick="go('menu')">← RETOUR</button></div>
+${news.length===0?'<div style="color:#7A9BBF;text-align:center;padding:60px;background:#15334D;border-radius:14px;font-size:16px">Aucune actualité pour le moment</div>':`
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">${news.map(n=>`
+<div style="cursor:pointer;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'" onclick="openArticle(${n.id})">
+  <div style="aspect-ratio:1;background:${n.image?`url('${esc(n.image)}') center/cover`:'linear-gradient(135deg,#0EA5E9,#38BDF8)'};border-radius:16px;border:2px solid #1E4D7A;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:8px">${n.image?'':`<span style="font-size:36px;opacity:.6">📰</span>`}</div>
+  <div class="f1" style="font-size:14px;font-weight:700;color:#E8F0F8;text-align:center">${esc(n.title)}</div>
+  <div style="font-size:10px;color:#7A9BBF;text-align:center;margin-top:3px" class="f1">${new Date(n.createdAt).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"})}</div>
+</div>`).join("")}</div>`}`})}
+// Open single article
+function openArticle(id){
+  socket.emit("getNews",null,r=>{const news=r.news||[];const n=news.find(x=>x.id===id);if(!n)return;
+    document.getElementById("newsC").innerHTML=`
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><button class="btn2" style="padding:8px 16px;font-size:13px" onclick="renderNews()">← ARTICLES</button><span style="color:#7A9BBF;font-size:11px" class="f1">${new Date(n.createdAt).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</span></div>
+${n.image?`<div style="width:100%;max-height:300px;border-radius:14px;overflow:hidden;margin-bottom:18px;border:2px solid #1E4D7A"><img src="${esc(n.image)}" style="width:100%;height:100%;object-fit:cover;display:block"></div>`:""}
+<h2 class="f1" style="color:#67D4FF;font-size:24px;margin-bottom:14px">${esc(n.title)}</h2>
+<div style="background:#15334D;border:1px solid #1E4D7A;border-radius:12px;padding:24px;color:#E8F0F8;font-size:15px;line-height:1.7">${n.html}</div>
+<div style="color:#7A9BBF;font-size:11px;margin-top:12px" class="f1">Par ${esc(n.author)}</div>`})}
 
 // ADMIN
 function renderAdmin(){if(!me)return;
@@ -522,6 +536,14 @@ function renderAdminNews(){
 <div style="background:#15334D;border:1px solid #1E4D7A;border-radius:10px;padding:16px;margin-bottom:16px">
 <h3 class="f1" style="color:#F59E0B;font-size:15px;margin-bottom:12px">✍️ Nouvel article</h3>
 <input id="admNewsTitle" placeholder="Titre de l'article" style="width:100%;padding:10px;background:#0B1E36;border:1px solid #1E4D7A;border-radius:6px;color:#FFF;font-size:14px;margin-bottom:10px">
+<div style="margin-bottom:10px">
+  <label class="f1" style="font-size:11px;color:#7A9BBF;display:block;margin-bottom:4px">🖼️ Image d'en-tête <span style="color:#67D4FF">(recommandé : 800×800px, carré, JPG/PNG)</span></label>
+  <div style="display:flex;gap:8px;align-items:center">
+    <input id="admNewsImage" placeholder="URL de l'image d'en-tête..." style="flex:1;padding:8px;background:#0B1E36;border:1px solid #1E4D7A;border-radius:6px;color:#FFF;font-size:13px">
+    <div id="admImgPreview" style="width:48px;height:48px;border-radius:8px;background:#1E4D7A;border:1px solid #1E4D7A;overflow:hidden;flex-shrink:0"></div>
+  </div>
+  <div style="font-size:10px;color:#7A9BBF;margin-top:3px">Héberge l'image sur <a href="https://imgur.com" target="_blank" style="color:#67D4FF">imgur.com</a> ou <a href="https://postimages.org" target="_blank" style="color:#67D4FF">postimages.org</a> et colle le lien direct</div>
+</div>
 <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;background:#0B1E36;padding:6px;border-radius:6px;border:1px solid #1E4D7A">
   <button onmousedown="event.preventDefault()" onclick="fmt('bold')" style="background:#1E4D7A;color:#FFF;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-weight:700">B</button>
   <button onmousedown="event.preventDefault()" onclick="fmt('italic')" style="background:#1E4D7A;color:#FFF;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-style:italic">I</button>
@@ -531,18 +553,23 @@ function renderAdminNews(){
   <button onmousedown="event.preventDefault()" onclick="fmt('formatBlock','h3')" style="background:#1E4D7A;color:#FFF;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px">H3</button>
   <input type="color" onchange="fmt('foreColor',this.value)" style="width:36px;height:28px;border:none;background:transparent;cursor:pointer" title="Couleur">
   <button onmousedown="event.preventDefault()" onclick="addLink()" style="background:#1E4D7A;color:#FFF;border:none;padding:4px 10px;border-radius:4px;cursor:pointer">🔗 Lien</button>
-  <button onmousedown="event.preventDefault()" onclick="addImage()" style="background:#1E4D7A;color:#FFF;border:none;padding:4px 10px;border-radius:4px;cursor:pointer">🖼️ Image</button>
+  <button onmousedown="event.preventDefault()" onclick="addImage()" style="background:#1E4D7A;color:#FFF;border:none;padding:4px 10px;border-radius:4px;cursor:pointer">🖼️ Image inline</button>
   <button onmousedown="event.preventDefault()" onclick="fmt('removeFormat')" style="background:#EF4444;color:#FFF;border:none;padding:4px 10px;border-radius:4px;cursor:pointer">✕ Style</button>
 </div>
 <div id="admNewsBody" contenteditable="true" style="min-height:180px;max-height:320px;overflow-y:auto;background:#0B1E36;border:1px solid #1E4D7A;border-radius:6px;padding:12px;color:#FFF;font-size:14px;line-height:1.6"></div>
 <button class="btn" style="width:100%;margin-top:10px;padding:10px" onclick="publishNews()">📢 PUBLIER</button>
 </div>
 <h3 class="f1" style="color:#F59E0B;font-size:15px;margin-bottom:10px">📚 Articles publiés (${news.length})</h3>
-${news.length===0?'<div style="color:#7A9BBF;text-align:center;padding:20px">Aucun article</div>':news.map(n=>`<div style="background:#15334D;border:1px solid #1E4D7A;border-radius:8px;padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center"><div><div class="f1" style="color:#67D4FF;font-size:14px;font-weight:700">${esc(n.title)}</div><div style="color:#7A9BBF;font-size:11px">${new Date(n.createdAt).toLocaleString("fr-FR")} — par ${esc(n.author)}</div></div><button onclick="deleteNews(${n.id})" style="background:#EF4444;color:#FFF;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-size:12px">🗑️ Supprimer</button></div>`).join("")}`})}
+${news.length===0?'<div style="color:#7A9BBF;text-align:center;padding:20px">Aucun article</div>':news.map(n=>`<div style="background:#15334D;border:1px solid #1E4D7A;border-radius:8px;padding:12px;margin-bottom:10px;display:flex;gap:12px;align-items:center">
+${n.image?`<img src="${esc(n.image)}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0">`:'<div style="width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,#0EA5E9,#38BDF8);flex-shrink:0;display:flex;align-items:center;justify-content:center"><span style="font-size:20px">📰</span></div>'}
+<div style="flex:1;min-width:0"><div class="f1" style="color:#67D4FF;font-size:14px;font-weight:700">${esc(n.title)}</div><div style="color:#7A9BBF;font-size:11px">${new Date(n.createdAt).toLocaleString("fr-FR")} — par ${esc(n.author)}</div></div>
+<button onclick="deleteNews(${n.id})" style="background:#EF4444;color:#FFF;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-size:12px;flex-shrink:0">🗑️</button></div>`).join("")}`
+    // Image preview listener
+    setTimeout(()=>{const inp=document.getElementById("admNewsImage");const prev=document.getElementById("admImgPreview");if(inp&&prev)inp.addEventListener("input",()=>{prev.innerHTML=inp.value?`<img src="${inp.value}" style="width:100%;height:100%;object-fit:cover">`:""})},100)})}
 function fmt(cmd,val){if(cmd==='formatBlock')document.execCommand(cmd,false,'<'+val+'>');else document.execCommand(cmd,false,val||null);document.getElementById("admNewsBody").focus()}
 function addLink(){const url=prompt("URL du lien:");if(url)fmt("createLink",url)}
-function addImage(){const url=prompt("URL de l'image:");if(url)fmt("insertImage",url)}
-function publishNews(){const title=document.getElementById("admNewsTitle").value.trim();const html=document.getElementById("admNewsBody").innerHTML.trim();if(!title||!html){alert("Titre et contenu requis");return}socket.emit("admin_createNews",{title,html},r=>{if(r.error){alert(r.error);return}document.getElementById("admNewsTitle").value="";document.getElementById("admNewsBody").innerHTML="";renderAdminNews()})}
+function addImage(){const url=prompt("URL de l'image dans le texte:");if(url)fmt("insertImage",url)}
+function publishNews(){const title=document.getElementById("admNewsTitle").value.trim();const html=document.getElementById("admNewsBody").innerHTML.trim();const image=(document.getElementById("admNewsImage")?.value||"").trim();if(!title||!html){alert("Titre et contenu requis");return}socket.emit("admin_createNews",{title,html,image:image||null},r=>{if(r.error){alert(r.error);return}document.getElementById("admNewsTitle").value="";document.getElementById("admNewsBody").innerHTML="";if(document.getElementById("admNewsImage"))document.getElementById("admNewsImage").value="";renderAdminNews()})}
 function deleteNews(id){if(!confirm("Supprimer cet article ?"))return;socket.emit("admin_deleteNews",{id},r=>{if(r.error){alert(r.error);return}renderAdminNews()})}
 
 // Admin button visibility
