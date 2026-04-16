@@ -52,6 +52,12 @@ function rN(lp){if(lp>=2000)return"Maître";const t=Math.min(4,Math.floor(lp/400
 function rC(lp){if(lp>=2000)return TC[5];return TC[Math.min(4,Math.floor(lp/400))]}
 function cLP(m,o,w){const b=w?28:-18,s=w?Math.max(.6,1.3-m/3e3):Math.min(1.4,.8+m/3e3),d=o-m,x=w?Math.max(0,d/200)*5:Math.min(0,d/200)*3;return Math.round(b*s+x)}
 
+// Daily shop rotation — uses current UTC day as seed
+function getDailyShopId(){const d=new Date();return`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}-${String(d.getUTCDate()).padStart(2,"0")}`}
+function getShopEndMs(){const d=new Date();const end=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()+1));return end.getTime()}
+// Deterministic rotation: pick N items from pool using day-based seed
+function shopRotation(pool,count,seed){const s=seed.split("-").reduce((a,b)=>a+parseInt(b),0);const shuffled=[...pool].map((v,i)=>({v,k:(s+i*997)%pool.length}));shuffled.sort((a,b)=>a.k-b.k);return shuffled.slice(0,count).map(x=>x.v)}
+
 function mkG(){const g=Array.from({length:GH},()=>Array(GW).fill(T.E));for(let y=0;y<GH;y++)for(let x=0;x<GW;x++)if(x===0||x===GW-1||y===0||y===GH-1)g[y][x]=T.W;for(let iy=0;iy<IH;iy++)for(let ix=0;ix<IW;ix++)if(ix%2===1&&iy%2===1)g[iy+1][ix+1]=T.W;const sf=new Set();[[1,1],[2,1],[1,2],[3,1],[1,3]].forEach(([x,y])=>sf.add(`${x},${y}`));const ax=GW-2,ay=GH-2;[[ax,ay],[ax-1,ay],[ax,ay-1],[ax-2,ay],[ax,ay-2]].forEach(([x,y])=>sf.add(`${x},${y}`));for(let y=1;y<GH-1;y++)for(let x=1;x<GW-1;x++)if(g[y][x]===T.E&&!sf.has(`${x},${y}`)&&Math.random()<.6)g[y][x]=T.B;return g}
 function genSp(){const o=[],v=new Set();let t=1,b=GH-2,l=1,r=GW-2;while(t<=b&&l<=r){for(let x=l;x<=r;x++){const k=`${x},${t}`;if(!v.has(k)){v.add(k);o.push({x,y:t})}}t++;for(let y=t;y<=b;y++){const k=`${r},${y}`;if(!v.has(k)){v.add(k);o.push({x:r,y})}}r--;for(let x=r;x>=l;x--){const k=`${x},${b}`;if(!v.has(k)){v.add(k);o.push({x,y:b})}}b--;for(let y=b;y>=t;y--){const k=`${l},${y}`;if(!v.has(k)){v.add(k);o.push({x:l,y})}}l++}return o}
 
@@ -143,6 +149,20 @@ io.on("connection",sock=>{
   sock.on("findMatch",({username,lp})=>{const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1);queue.push({socket:sock,username,lp});sock.emit("queueUpdate",{pos:queue.length});findMatch()});
   sock.on("cancelQueue",()=>{const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1)});
   sock.on("getSeasonInfo",(_,cb)=>cb({seasonId:getSeasonId(),seasonEnd:getSeasonEnd(),rewards:SEASON_REWARDS}));
+  sock.on("getShopRotation",(_,cb)=>{
+    // Static pools of all available cosmetic IDs (excluding default free)
+    const SKIN_POOL=["fire","toxic","royal","golden","shadow","captain","military","samurai","ninja","wizard","chef","astronaut","pirate","cowboy","hockey","disco","ghost","zombie","robot","cyber","neon","rainbow","crystal_skin","frost","inferno_king"];
+    const ARENA_POOL=["volcano","forest","crystal","desert","space","underwater","candy","haunted","neon_city","cyberpunk","temple","ruins"];
+    const EMOTE_POOL=["6","7","8","9","10","11","12","13","14","15","16","17","18","19","20"];
+    const sid=getDailyShopId();
+    cb({
+      endMs:getShopEndMs(),
+      shopId:sid,
+      skins:shopRotation(SKIN_POOL,4,sid),
+      arenas:shopRotation(ARENA_POOL,3,sid+"a"),
+      emotes:shopRotation(EMOTE_POOL,5,sid+"e")
+    });
+  });
   sock.on("claimReward",({tier},cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}const sid=getSeasonId();if(!u.seasonData)u.seasonData={};if(!u.seasonData[sid])u.seasonData[sid]={xp:0,claimed:[],hasPass:false};const info=getTier(u.seasonData[sid].xp);const r=SEASON_REWARDS.find(x=>x.tier===tier);if(!r){cb({error:"Palier introuvable"});return}if(info.tier<tier){cb({error:"Palier pas encore atteint"});return}if(u.seasonData[sid].claimed.includes(tier)){cb({error:"Déjà réclamé"});return}if(!r.free&&!u.seasonData[sid].hasPass){cb({error:"Passe de combat requis"});return}
     // Grant reward
     if(r.type==="flocons")u.flocons=(u.flocons||0)+r.value;
@@ -153,7 +173,7 @@ io.on("connection",sock=>{
   sock.on("buyBattlePass",(_,cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}const PASS_PRICE=500;if((u.flocons||0)<PASS_PRICE){cb({error:"Pas assez de Flocons"});return}const sid=getSeasonId();if(!u.seasonData)u.seasonData={};if(!u.seasonData[sid])u.seasonData[sid]={xp:0,claimed:[],hasPass:false};if(u.seasonData[sid].hasPass){cb({error:"Passe déjà acheté"});return}u.flocons-=PASS_PRICE;u.seasonData[sid].hasPass=true;pU(u);cb({user:u})});
   sock.on("move",dir=>{if(dir&&dir.dx!==undefined)pInput.set(sock.id,dir)});
   sock.on("bomb",()=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g||g.phase!=="play")return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";const e=g.ent[pid];if(!e.alive||e.bL<=0||g.bombs.some(b=>b.gx===e.gx&&b.gy===e.gy))return;e.bL--;g.bombs.push({gx:e.gx,gy:e.gy,px:e.gx*CELL+CELL/2,py:e.gy*CELL+CELL/2,range:e.range,owner:pid,timer:Date.now()+FUSE,id:Math.random().toString(36)});g.mStats[pid].bombs++});
-  sock.on("emote",({key})=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g)return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";const u=gU(g.pl[pid].name);if(!u||!(u.selectedEmotes||[]).includes(key))return;g.emotes.push({pid,key,time:Date.now()})});
+  sock.on("emote",({key})=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g)return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";const u=gU(g.pl[pid].name);if(!u||!(u.selectedEmotes||[]).includes(key))return;if(!g.emoteCD)g.emoteCD={p1:0,p2:0};const now=Date.now();if(now-g.emoteCD[pid]<2000)return;g.emoteCD[pid]=now;g.emotes.push({pid,key,time:now})});
   // Draw proposal
   sock.on("proposeDraw",()=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g||g.phase==="mEnd")return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";if(g.drawUsed[pid])return;g.drawUsed[pid]=true;g.drawProposed=pid;const other=pid==="p1"?"p2":"p1";g.pl[other].sock.emit("drawProposal",{from:g.pl[pid].name})});
   sock.on("respondDraw",({accept})=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g||!g.drawProposed)return;if(accept){endMatchDraw(gid)}else{const proposer=g.drawProposed;g.drawProposed=null;g.pl[proposer].sock.emit("drawRejected",{})}});
