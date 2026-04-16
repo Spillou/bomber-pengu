@@ -31,6 +31,12 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
 @keyframes pulse{0%,100%{box-shadow:0 0 20px rgba(14,165,233,.3)}50%{box-shadow:0 0 40px rgba(14,165,233,.6)}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes snowfall{0%{transform:translateY(-10vh) rotate(0deg)}100%{transform:translateY(105vh) rotate(360deg)}}
+@keyframes menuBtnIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+.menu-btn{width:100%;padding:16px;font-size:18px;border-radius:14px;font-weight:700;border:none;cursor:pointer;color:#FFF;transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden;font-family:'Fredoka',sans-serif;letter-spacing:.5px}
+.menu-btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.menu-btn:active{transform:translateY(0) scale(.98)}
+.menu-btn::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);background-size:200%;animation:shimmer 3s infinite}
 </style>
 </head>
 <body>
@@ -67,10 +73,12 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
 
 <!-- MENU -->
 <div id="pg-menu" class="hidden" style="position:fixed;inset:0;display:flex;background:#0B1E36">
+<!-- Snow canvas -->
+<canvas id="snowCv" style="position:absolute;inset:0;pointer-events:none;z-index:1;opacity:.35"></canvas>
 <!-- Admin button -->
 <div style="position:absolute;top:8px;right:10px;z-index:20"><button id="adminBtnTop" class="btn2" style="padding:4px 10px;font-size:10px;display:none;border-color:#F59E0B55;color:#F59E0B" onclick="go('admin')">⚙️</button></div>
 <!-- LEFT PANEL: Chat -->
-<div style="flex:1;display:flex;flex-direction:column;background:#0F2235;border-right:1px solid #1E4D7A">
+<div style="flex:1;display:flex;flex-direction:column;background:#0F2235;border-right:1px solid #1E4D7A;z-index:2">
   <div class="f1" style="padding:14px 18px 8px;font-size:14px;color:#67D4FF;flex-shrink:0">💬 CHAT GLOBAL</div>
   <div id="gCB" style="flex:1;overflow-y:auto;padding:4px 18px;display:flex;flex-direction:column;gap:3px;min-height:0"></div>
   <div style="padding:10px 18px;display:flex;gap:8px;flex-shrink:0;border-top:1px solid #1E4D7A33">
@@ -80,23 +88,20 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
   <div style="padding:4px 18px 10px;flex-shrink:0"><button style="background:none;border:none;color:#7A9BBF;font-size:11px;cursor:pointer;padding:0" onclick="logout()">Déconnexion</button></div>
 </div>
 <!-- RIGHT PANEL: Profile + Navigation -->
-<div style="flex:0 0 420px;display:flex;flex-direction:column;padding:16px 20px;justify-content:space-between">
-  <!-- Profile Card -->
-  <div id="pCard" style="background:#15334D;border-radius:14px;padding:16px;border:1px solid #1E4D7A;cursor:pointer;flex-shrink:0" onclick="profileTarget=me;go('profile')"></div>
+<div style="flex:0 0 440px;display:flex;flex-direction:column;padding:14px 20px;z-index:2">
+  <!-- Profile Card - BIGGER -->
+  <div id="pCard" style="background:linear-gradient(135deg,#15334D,#1A3D5C);border-radius:16px;padding:18px;border:1px solid #1E4D7A;cursor:pointer;flex-shrink:0;box-shadow:0 4px 20px rgba(0,0,0,.2);transition:transform .15s" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'" onclick="profileTarget=me;go('profile')"></div>
   <div id="mResult" style="display:none"></div>
-  <!-- Navigation Buttons -->
-  <div style="display:flex;flex-direction:column;gap:10px;padding:12px 0">
-    <button class="btn" style="width:100%;padding:18px;font-size:20px;border-radius:14px;font-weight:700" onclick="go('cosmetics')">🎨 Personnalisation</button>
-    <button class="btn" style="width:100%;padding:18px;font-size:20px;border-radius:14px;font-weight:700" onclick="go('shop')">🏪 Boutique</button>
-    <button class="btn" style="width:100%;padding:18px;font-size:20px;border-radius:14px;font-weight:700;position:relative" onclick="go('news')">📰 NEWS<span id="newsBadge2" style="display:none;position:absolute;top:10px;right:14px;background:#EF4444;color:#FFF;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">1</span></button>
-    <button class="btn" style="width:100%;padding:18px;font-size:20px;border-radius:14px;font-weight:700" onclick="go('lb')">🏆 Classement</button>
-    <button class="btn" style="width:100%;padding:20px;font-size:22px;border-radius:14px;font-weight:700;background:linear-gradient(135deg,#0EA5E9,#38BDF8);box-shadow:0 4px 20px rgba(14,165,233,.4);letter-spacing:1px" onclick="findMatch()">⚔️ JOUER</button>
+  <!-- Navigation Buttons with unique colors -->
+  <div style="display:flex;flex-direction:column;gap:8px;flex:1;justify-content:center;padding:8px 0">
+    <button class="menu-btn" style="background:linear-gradient(135deg,#EC4899,#F472B6);animation:menuBtnIn .4s .1s both" onclick="go('cosmetics')">🎨 Personnalisation</button>
+    <button class="menu-btn" style="background:linear-gradient(135deg,#F59E0B,#FBBF24);animation:menuBtnIn .4s .2s both" onclick="go('shop')">🏪 Boutique</button>
+    <button class="menu-btn" style="background:linear-gradient(135deg,#10B981,#34D399);animation:menuBtnIn .4s .3s both;position:relative" onclick="go('news')">📰 NEWS<span id="newsBadge2" style="display:none;position:absolute;top:10px;right:14px;background:#EF4444;color:#FFF;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">1</span></button>
+    <button class="menu-btn" style="background:linear-gradient(135deg,#8B5CF6,#A78BFA);animation:menuBtnIn .4s .4s both" onclick="go('lb')">🏆 Classement</button>
+    <button class="menu-btn" style="background:linear-gradient(135deg,#6366F1,#818CF8);animation:menuBtnIn .4s .5s both" onclick="go('pass')">🎫 Passe de Combat</button>
+    <button class="menu-btn" style="background:linear-gradient(135deg,#0EA5E9,#38BDF8);box-shadow:0 4px 24px rgba(14,165,233,.5);animation:menuBtnIn .4s .6s both,pulse 2s infinite;font-size:20px;padding:18px;letter-spacing:1px" onclick="findMatch()">⚔️ JOUER</button>
   </div>
-  <!-- Bottom: Pass + Online -->
-  <div style="flex-shrink:0">
-    <button class="btn2" style="width:100%;padding:10px;font-size:13px;border-radius:10px;background:linear-gradient(135deg,#A78BFA22,#A78BFA11);border-color:#A78BFA55;color:#A78BFA;margin-bottom:6px" onclick="go('pass')">🎫 Passe de Combat</button>
-    <div id="onlineInd" style="color:#34D399;font-size:10px;text-align:center" class="f1"></div>
-  </div>
+  <div id="onlineInd" style="color:#34D399;font-size:10px;text-align:center;flex-shrink:0" class="f1"></div>
 </div>
 </div>
 
@@ -332,11 +337,31 @@ document.getElementById("inU").onkeydown=e=>{if(e.key==="Enter")doAuth()};docume
 function getLvl(xp){let lvl=1,need=100;xp=xp||0;while(xp>=need){xp-=need;lvl++;need=Math.floor(100+lvl*20)}return{level:lvl,xp,need}}
 function renderMenu(){if(!me)return;const rk=gR(me.lp);const lv=getLvl(me.xp);
   const lp=me.lp||0;const inTier=lp%100;const nextLP=100-inTier;const nextRk=gR(lp+100);
-  document.getElementById("pCard").innerHTML=`<div style="display:flex;gap:12px;align-items:center;margin-bottom:8px"><div style="font-size:36px;min-width:44px;text-align:center">${renderAvatar(me.avatar,36)}</div><div style="flex:1"><div style="display:flex;align-items:center;gap:8px"><div style="font-size:18px;font-weight:700" class="f1">${esc(me.username)}</div><div style="background:#A78BFA22;border:1px solid #A78BFA55;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;color:#A78BFA" class="f1">Nv.${lv.level}</div></div><span class="badge" style="background:${rk.c}22;border:1px solid ${rk.c}55;color:${rk.c}">${rk.full}</span><div style="display:flex;gap:4px;margin-top:4px">${(me.featuredBadges||[]).map(bid=>{const b=BDG.find(x=>x.id===bid);return b?`<span style="font-size:18px">${b.i}</span>`:'<span style="font-size:18px;opacity:.15">⬜</span>'}).join("")}</div></div><div style="text-align:right"><div style="color:#FFB347;font-size:28px;font-weight:700" class="f1">${me.lp||0}</div><div style="color:#7A9BBF;font-size:10px" class="f1">LP</div></div></div>
-  <div style="display:flex;justify-content:space-between;font-size:10px;color:${rk.c};margin-bottom:2px"><span class="f1">${rk.full}</span><span class="f1" style="color:${nextRk.c}">${nextRk.full} →</span></div>
-  <div style="background:#1E4D7A;border-radius:3px;height:6px;margin-bottom:4px;overflow:hidden"><div style="height:100%;background:linear-gradient(90deg,${rk.c},${nextRk.c});border-radius:3px;width:${inTier}%"></div></div>
-  <div style="font-size:10px;color:#7A9BBF;margin-bottom:8px" class="f1">${nextLP} LP jusqu'au rang suivant</div>
-  <div style="background:#1E4D7A;border-radius:2px;height:4px;margin-bottom:6px;overflow:hidden"><div style="height:100%;background:#A78BFA;border-radius:2px;width:${Math.round(lv.xp/lv.need*100)}%"></div></div><div style="display:flex;gap:10px;font-size:13px;color:#7A9BBF"><span><b style="color:#34D399">${me.wins||0}W</b>/<b style="color:#F87171">${me.losses||0}L</b></span><span>${me.games||0} parties</span><span>❄️ ${me.flocons||0}</span><span style="color:#A78BFA">${lv.xp}/${lv.need} XP</span></div>`;
+  document.getElementById("pCard").innerHTML=`
+  <div style="display:flex;gap:16px;align-items:center;margin-bottom:12px">
+    <div style="font-size:48px;min-width:56px;text-align:center">${renderAvatar(me.avatar,48)}</div>
+    <div style="flex:1">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><div style="font-size:22px;font-weight:700" class="f1">${esc(me.username)}</div><div style="background:#A78BFA22;border:1px solid #A78BFA55;border-radius:5px;padding:2px 8px;font-size:12px;font-weight:700;color:#A78BFA" class="f1">Nv.${lv.level}</div></div>
+      <span class="badge" style="background:${rk.c}22;border:1px solid ${rk.c}55;color:${rk.c};font-size:12px;padding:3px 10px">${rk.full}</span>
+      <div style="display:flex;gap:5px;margin-top:6px">${(me.featuredBadges||[]).map(bid=>{const b=BDG.find(x=>x.id===bid);return b?`<span style="font-size:20px">${b.i}</span>`:'<span style="font-size:20px;opacity:.15">⬜</span>'}).join("")}</div>
+    </div>
+    <div style="text-align:right">
+      <div style="color:#FFB347;font-size:34px;font-weight:700" class="f1">${me.lp||0}</div>
+      <div style="color:#7A9BBF;font-size:11px" class="f1">LP</div>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:space-between;font-size:11px;color:${rk.c};margin-bottom:3px"><span class="f1">${rk.full}</span><span class="f1" style="color:${nextRk.c}">${nextRk.full} →</span></div>
+  <div style="background:#1E4D7A;border-radius:4px;height:8px;margin-bottom:5px;overflow:hidden"><div style="height:100%;background:linear-gradient(90deg,${rk.c},${nextRk.c});border-radius:4px;width:${inTier}%;transition:width .5s"></div></div>
+  <div style="font-size:11px;color:#7A9BBF;margin-bottom:8px" class="f1">${nextLP} LP jusqu'au rang suivant</div>
+  <div style="background:#1E4D7A;border-radius:3px;height:5px;margin-bottom:8px;overflow:hidden"><div style="height:100%;background:#A78BFA;border-radius:3px;width:${Math.round(lv.xp/lv.need*100)}%;transition:width .5s"></div></div>
+  <div style="display:flex;gap:14px;font-size:14px;color:#7A9BBF;flex-wrap:wrap">
+    <span><b style="color:#34D399">${me.wins||0}W</b> / <b style="color:#F87171">${me.losses||0}L</b></span>
+    <span>${me.games||0} parties</span>
+    <span>❄️ ${me.flocons||0}</span>
+    <span style="color:#A78BFA">${lv.xp}/${lv.need} XP</span>
+  </div>`;
+  // Init snow
+  initSnow();
 }
 
 // CHAT with clickable usernames
@@ -750,5 +775,29 @@ function render(){if(!grid||!ent){requestAnimationFrame(render);return}const W=G
   requestAnimationFrame(render)}
 requestAnimationFrame(render);
 // Auto-login
+// SNOW PARTICLES
+let snowFlakes=[],snowRunning=false;
+function initSnow(){
+  const cv=document.getElementById("snowCv");if(!cv||snowRunning)return;
+  const ctx=cv.getContext("2d");snowRunning=true;
+  function resize(){cv.width=window.innerWidth;cv.height=window.innerHeight}
+  resize();window.addEventListener("resize",resize);
+  // Create snowflakes
+  snowFlakes=[];for(let i=0;i<60;i++)snowFlakes.push({x:Math.random()*cv.width,y:Math.random()*cv.height,r:1+Math.random()*3,dx:-.3+Math.random()*.6,dy:.5+Math.random()*1.5,o:.3+Math.random()*.5});
+  function drawSnow(){
+    if(!document.getElementById("pg-menu")||document.getElementById("pg-menu").classList.contains("hidden")){snowRunning=false;return}
+    ctx.clearRect(0,0,cv.width,cv.height);
+    for(const f of snowFlakes){
+      f.x+=f.dx;f.y+=f.dy;
+      if(f.y>cv.height+10){f.y=-10;f.x=Math.random()*cv.width}
+      if(f.x>cv.width)f.x=0;if(f.x<0)f.x=cv.width;
+      ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,255,255,${f.o})`;ctx.fill();
+    }
+    requestAnimationFrame(drawSnow);
+  }
+  drawSnow();
+}
+
 tryAutoLogin();
 </script></body></html>
