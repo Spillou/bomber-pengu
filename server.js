@@ -53,7 +53,35 @@ const SEASON_REWARDS=[
 ];
 function rN(lp){if(lp>=2000)return"Maître";const t=Math.min(4,Math.floor(lp/400));return`${TN[t]} ${4-Math.floor((lp-t*400)/100)}`}
 function rC(lp){if(lp>=2000)return TC[5];return TC[Math.min(4,Math.floor(lp/400))]}
-function cLP(m,o,w){const b=w?28:-18,s=w?Math.max(.6,1.3-m/3e3):Math.min(1.4,.8+m/3e3),d=o-m,x=w?Math.max(0,d/200)*5:Math.min(0,d/200)*3;return Math.round(b*s+x)}
+function getTierIdx(lp){return Math.min(5,Math.floor((lp||0)/400))} // 0=Bronze,1=Argent,2=Or,3=Platine,4=Diamant,5=Maître
+
+// --- MMR / LP SYSTEM (LoL-inspired) ---
+// MMR: hidden rating, Elo-based. Determines matchmaking + LP gains.
+// LP: visible rank points. LP gains depend on MMR vs displayed rank.
+// K-factor: how much MMR changes per game. Higher for new players.
+const MMR_K=32; // base K-factor
+function expectedWin(mmrA,mmrB){return 1/(1+Math.pow(10,(mmrB-mmrA)/400))}
+function updateMMR(myMMR,oppMMR,won){
+  const expected=expectedWin(myMMR,oppMMR);
+  const result=won?1:0;
+  return Math.round(myMMR+MMR_K*(result-expected));
+}
+// LP gain: depends on gap between MMR and displayed rank LP
+// If MMR > LP → big LP gains, small losses (you're better than your rank)
+// If MMR < LP → small LP gains, big losses (you're ranked too high)
+// If MMR ≈ LP → balanced ±20
+function calcLP(myLP,myMMR,won){
+  const gap=myMMR-myLP; // positive = MMR above rank, negative = below
+  if(won){
+    // Base +22, boosted if MMR > LP
+    const base=22;const boost=Math.max(-8,Math.min(15,Math.round(gap/30)));
+    return Math.max(8,base+boost);
+  }else{
+    // Base -18, worse if MMR < LP
+    const base=-18;const penalty=Math.max(-12,Math.min(8,Math.round(gap/30)));
+    return Math.min(-8,base+penalty);
+  }
+}
 
 // Daily shop rotation — uses current UTC day as seed
 function getDailyShopId(){const d=new Date();return`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}-${String(d.getUTCDate()).padStart(2,"0")}`}
@@ -71,7 +99,19 @@ const otherBlock=bombs.some(ob=>{if(ob.id===bomb.id)return false;const k=g.kicke
 const queue=[],games=new Map(),pGame=new Map(),pInput=new Map();
 let onlineCount=0;
 
-function findMatch(){if(queue.length<2)return;queue.sort((a,b)=>a.lp-b.lp);let bi=-1,bd=Infinity;for(let i=0;i<queue.length-1;i++){if(queue[i].username===queue[i+1].username)continue;const d=Math.abs(queue[i].lp-queue[i+1].lp);if(d<bd){bd=d;bi=i}}if(bi<0)return;const p1=queue.splice(bi+1,1)[0],p2=queue.splice(bi,1)[0];proposeMatch(p1,p2)}
+function findMatch(){if(queue.length<2)return;
+  // Sort by MMR for better matching
+  queue.sort((a,b)=>(a.mmr||a.lp)-(b.mmr||b.lp));
+  let bi=-1,bd=Infinity;
+  for(let i=0;i<queue.length-1;i++){
+    if(queue[i].username===queue[i+1].username)continue;
+    // Tier restriction: can only match ±1 tier
+    const t1=getTierIdx(queue[i].lp),t2=getTierIdx(queue[i+1].lp);
+    if(Math.abs(t1-t2)>1)continue; // Bronze can't fight Or, etc.
+    const d=Math.abs((queue[i].mmr||queue[i].lp)-(queue[i+1].mmr||queue[i+1].lp));
+    if(d<bd){bd=d;bi=i}
+  }
+  if(bi<0)return;const p1=queue.splice(bi+1,1)[0],p2=queue.splice(bi,1)[0];proposeMatch(p1,p2)}
 
 // MATCH PROPOSAL — 10s to accept
 const proposals=new Map(); // proposalId -> {p1,p2,accepted:{p1:bool,p2:bool},timer}
@@ -139,16 +179,28 @@ function applyXP(u,xpGain){u.xp=(u.xp||0)+xpGain;const lv=getLevel(u.xp);u.level
   if(!u.seasonData)u.seasonData={};const sid=getSeasonId();if(!u.seasonData[sid])u.seasonData[sid]={xp:0,claimed:[],hasPass:false};
   u.seasonData[sid].xp=(u.seasonData[sid].xp||0)+xpGain}
 function checkSeasonReset(u){const sid=getSeasonId();if(u.lastSeason!==sid){
-  // Save hidden MMR = current LP, preserve for placement
-  u.hiddenMMR=u.lp||0;
-  // Reset LP but give soft placement: start at hiddenMMR * 0.3, capped at 400 (below Silver)
-  u.lp=Math.min(400,Math.floor((u.hiddenMMR||0)*0.3));
+  // MMR compression: keep 70% (like LoL split reset)
+  if(u.mmr===undefined)u.mmr=u.lp||0;
+  u.mmr=Math.round((u.mmr||0)*0.7);
+  // LP hard reset: place at 30% of old LP, capped at 400 (Bronze range)
+  u.lp=Math.min(400,Math.floor((u.lp||0)*0.3));
   u.lastSeason=sid;pU(u);uLB(u)}}
 
 function endMatch(gid){const g=games.get(gid);if(!g)return;g.phase="mEnd";clearInterval(g.tick);const mw=g.sc.p1>=3?"p1":"p2",ml=mw==="p1"?"p2":"p1";const wu=gU(g.pl[mw].name),lu=gU(g.pl[ml].name);
-  if(wu&&lu){const wd=cLP(wu.lp,lu.lp,true),ld2=cLP(lu.lp,wu.lp,false);const wxp=calcXP(true,g.mStats[mw].kills,g.mStats[mw].pups);const lxp=calcXP(false,g.mStats[ml].kills,g.mStats[ml].pups);
-    wu.lp=Math.max(0,wu.lp+wd);wu.wins=(wu.wins||0)+1;wu.games=(wu.games||0)+1;wu.currentStreak=(wu.currentStreak||0)+1;wu.bestStreak=Math.max(wu.bestStreak||0,wu.currentStreak);wu.kills=(wu.kills||0)+g.mStats[mw].kills;wu.bombsPlaced=(wu.bombsPlaced||0)+g.mStats[mw].bombs;wu.pupsCollected=(wu.pupsCollected||0)+g.mStats[mw].pups;applyXP(wu,wxp);wu.history=[{t:Date.now(),vs:lu.username,r:"W",s:`${g.sc.p1}-${g.sc.p2}`,lp:wd},...(wu.history||[]).slice(0,19)];pU(wu);uLB(wu);
-    lu.lp=Math.max(0,lu.lp+ld2);lu.losses=(lu.losses||0)+1;lu.games=(lu.games||0)+1;lu.currentStreak=0;lu.kills=(lu.kills||0)+g.mStats[ml].kills;lu.bombsPlaced=(lu.bombsPlaced||0)+g.mStats[ml].bombs;lu.pupsCollected=(lu.pupsCollected||0)+g.mStats[ml].pups;applyXP(lu,lxp);lu.history=[{t:Date.now(),vs:wu.username,r:"L",s:`${g.sc.p1}-${g.sc.p2}`,lp:ld2},...(lu.history||[]).slice(0,19)];pU(lu);uLB(lu);
+  if(wu&&lu){
+    // Initialize MMR if not set (for old users)
+    if(wu.mmr===undefined)wu.mmr=wu.lp||0;
+    if(lu.mmr===undefined)lu.mmr=lu.lp||0;
+    // Update MMR (Elo)
+    const wNewMMR=updateMMR(wu.mmr,lu.mmr,true);
+    const lNewMMR=updateMMR(lu.mmr,wu.mmr,false);
+    wu.mmr=Math.max(0,wNewMMR);lu.mmr=Math.max(0,lNewMMR);
+    // Calculate LP changes based on MMR vs rank
+    const wd=calcLP(wu.lp,wu.mmr,true);
+    const ld2=calcLP(lu.lp,lu.mmr,false);
+    const wxp=calcXP(true,g.mStats[mw].kills,g.mStats[mw].pups);const lxp=calcXP(false,g.mStats[ml].kills,g.mStats[ml].pups);
+    wu.lp=Math.max(0,(wu.lp||0)+wd);wu.wins=(wu.wins||0)+1;wu.games=(wu.games||0)+1;wu.currentStreak=(wu.currentStreak||0)+1;wu.bestStreak=Math.max(wu.bestStreak||0,wu.currentStreak);wu.kills=(wu.kills||0)+g.mStats[mw].kills;wu.bombsPlaced=(wu.bombsPlaced||0)+g.mStats[mw].bombs;wu.pupsCollected=(wu.pupsCollected||0)+g.mStats[mw].pups;applyXP(wu,wxp);wu.history=[{t:Date.now(),vs:lu.username,r:"W",s:`${g.sc.p1}-${g.sc.p2}`,lp:wd},...(wu.history||[]).slice(0,19)];pU(wu);uLB(wu);
+    lu.lp=Math.max(0,(lu.lp||0)+ld2);lu.losses=(lu.losses||0)+1;lu.games=(lu.games||0)+1;lu.currentStreak=0;lu.kills=(lu.kills||0)+g.mStats[ml].kills;lu.bombsPlaced=(lu.bombsPlaced||0)+g.mStats[ml].bombs;lu.pupsCollected=(lu.pupsCollected||0)+g.mStats[ml].pups;applyXP(lu,lxp);lu.history=[{t:Date.now(),vs:wu.username,r:"L",s:`${g.sc.p1}-${g.sc.p2}`,lp:ld2},...(lu.history||[]).slice(0,19)];pU(lu);uLB(lu);
     g.pl[mw].sock.emit("matchEnd",{result:"win",lpD:wd,sc:g.sc,opp:lu.username,xp:wxp});g.pl[ml].sock.emit("matchEnd",{result:"lose",lpD:ld2,sc:g.sc,opp:wu.username,xp:lxp})}
   setTimeout(()=>{pGame.delete(g.pl.p1.sock.id);pGame.delete(g.pl.p2.sock.id);pInput.delete(g.pl.p1.sock.id);pInput.delete(g.pl.p2.sock.id);games.delete(gid)},5000)}
 
@@ -161,13 +213,14 @@ function endMatchDraw(gid){const g=games.get(gid);if(!g)return;g.phase="mEnd";cl
 
 io.on("connection",sock=>{
   onlineCount++;io.emit("onlineCount",onlineCount);console.log("+",sock.id,onlineCount);
-  sock.on("register",({username,password},cb)=>{if(!username||!password||username.length<3)return cb({error:"Pseudo trop court"});if(gU(username))return cb({error:"Pseudo déjà pris"});const u={username,password,lp:0,wins:0,losses:0,games:0,avatar:"penguin",skin:"classic",arena:"glacier",flocons:500,ownedSkins:["classic"],ownedArenas:["glacier"],ownedAvatars:["penguin","polar","seal"],featuredBadges:[null,null,null],kills:0,bombsPlaced:0,pupsCollected:0,bestStreak:0,currentStreak:0,history:[],xp:0,level:1,ownedEmotes:["1","2","3","4"],selectedEmotes:["1","2","3","4",null],seasonData:{},lastSeason:getSeasonId()};pU(u);uLB(u);sock.data.username=username;cb({user:u})});
+  sock.on("register",({username,password},cb)=>{if(!username||!password||username.length<3)return cb({error:"Pseudo trop court"});if(gU(username))return cb({error:"Pseudo déjà pris"});const u={username,password,lp:0,mmr:0,wins:0,losses:0,games:0,avatar:"penguin",skin:"classic",arena:"glacier",flocons:500,ownedSkins:["classic"],ownedArenas:["glacier"],ownedAvatars:["penguin","polar","seal"],featuredBadges:[null,null,null],kills:0,bombsPlaced:0,pupsCollected:0,bestStreak:0,currentStreak:0,history:[],xp:0,level:1,ownedEmotes:["1","2","3","4"],selectedEmotes:["1","2","3","4",null],seasonData:{},lastSeason:getSeasonId()};pU(u);uLB(u);sock.data.username=username;cb({user:u})});
   sock.on("login",({username,password},cb)=>{const u=gU(username);if(!u)return cb({error:"Compte introuvable"});if(u.password!==password)return cb({error:"Mot de passe incorrect"});if(u.banned)return cb({error:"Compte banni. Contactez un administrateur."});
     // Migrate old emoji avatars to new ID system
     if(!u.ownedAvatars)u.ownedAvatars=["penguin","polar","seal"];
     if(u.avatar&&u.avatar.length>3){u.avatar="penguin"}// emoji was set, reset to default ID
     if(!u.ownedEmotes)u.ownedEmotes=["1","2","3","4"];
     if(!u.selectedEmotes)u.selectedEmotes=["1","2","3","4",null];
+    if(u.mmr===undefined)u.mmr=u.lp||0; // Init MMR from current LP for old users
     checkSeasonReset(u);sock.data.username=username;u.lastSeen=Date.now();pU(u);cb({user:u})});
   sock.on("getUser",({username},cb)=>{const u=gU(username);if(u){checkSeasonReset(u);const{password,...safe}=u;cb({user:safe})}else cb({user:null})});
   sock.on("updateUser",({user},cb)=>{const ex=gU(user.username);if(ex){const upd={...ex,...user,password:ex.password};pU(upd);uLB(upd);cb({user:upd})}else cb({error:"Not found"})});
@@ -176,13 +229,14 @@ io.on("connection",sock=>{
   sock.on("sendChat",({username,message})=>{const u=gU(username);if(!u||!message?.trim())return;const c=gCh();c.push({u:username,m:message.trim(),t:Date.now(),r:rN(u.lp),rc:rC(u.lp),a:u.avatar||"🐧"});if(c.length>30)c.splice(0,c.length-30);sCh(c);io.emit("chatUpdate",{chat:c})});
   sock.on("gameChat",({message})=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g)return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";bc(g,"gameChatMsg",{username:g.pl[pid].name,message:message?.trim(),pid})});
   sock.on("findMatch",({username,lp})=>{
+    const u=gU(username);if(!u)return;
     // Remove this socket from queue if already there
     const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1);
     // Prevent same username from being in queue twice (different tab)
     const dup=queue.findIndex(q=>q.username===username);if(dup>=0)queue.splice(dup,1);
     // Prevent queueing if already in a game
     if(pGame.has(sock.id)){sock.emit("queueUpdate",{pos:0});return}
-    queue.push({socket:sock,username,lp});sock.emit("queueUpdate",{pos:queue.length});findMatch()});
+    queue.push({socket:sock,username,lp:u.lp||0,mmr:u.mmr||u.lp||0});sock.emit("queueUpdate",{pos:queue.length});findMatch()});
   sock.on("cancelQueue",()=>{const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1)});
   sock.on("acceptMatch",({proposalId})=>{const pr=proposals.get(proposalId);if(!pr)return;
     const role=pr.p1.socket.id===sock.id?"p1":"p2";pr.accepted[role]=true;
