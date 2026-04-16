@@ -17,6 +17,37 @@ const PUC=0.4,SR=2,SPD=2.2,CC=11,TICK=1000/60,KICK_SPD=2.5;
 const T={E:0,W:1,B:2},DR=[[0,-1],[0,1],[-1,0],[1,0]],PTS=["range","bombs","speed","kick"];
 const TN=["Bronze","Argent","Or","Platine","Diamant","Maître"];
 const TC=["#CD7F32","#C0C0C0","#FFD700","#00CED1","#B9F2FF","#FF6B6B"];
+
+// SEASON SYSTEM
+function getSeasonId(){const d=new Date();return`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}`}
+function getSeasonEnd(){const d=new Date();const end=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,1));return end.getTime()}
+// Tier XP requirement: tier N needs (500 + N*50) XP to complete. Total XP for tier 50 = sum
+function tierXP(t){return 500+t*50}
+function getTier(seasonXP){let t=0,remaining=seasonXP;while(t<50&&remaining>=tierXP(t)){remaining-=tierXP(t);t++}return{tier:t,progress:remaining,needed:t<50?tierXP(t):0}}
+// Rewards per tier: [tier, type, value, price (0=free)]
+const SEASON_REWARDS=[
+  {tier:1,type:"flocons",value:50,free:true},
+  {tier:3,type:"emote",value:"7",free:false,price:50}, // 🔥
+  {tier:5,type:"flocons",value:100,free:true},
+  {tier:8,type:"skin",value:"fire",free:false,price:100},
+  {tier:10,type:"flocons",value:150,free:true},
+  {tier:13,type:"emote",value:"8",free:false,price:75}, // 😎
+  {tier:15,type:"flocons",value:200,free:true},
+  {tier:18,type:"arena",value:"volcano",free:false,price:150},
+  {tier:20,type:"flocons",value:250,free:true},
+  {tier:23,type:"emote",value:"9",free:false,price:100}, // 🐧
+  {tier:25,type:"flocons",value:300,free:true},
+  {tier:28,type:"skin",value:"toxic",free:false,price:150},
+  {tier:30,type:"flocons",value:400,free:true},
+  {tier:33,type:"arena",value:"forest",free:false,price:200},
+  {tier:35,type:"flocons",value:500,free:true},
+  {tier:38,type:"skin",value:"royal",free:false,price:250},
+  {tier:40,type:"flocons",value:700,free:true},
+  {tier:43,type:"skin",value:"shadow",free:false,price:300},
+  {tier:45,type:"flocons",value:1000,free:true},
+  {tier:48,type:"arena",value:"crystal",free:false,price:400},
+  {tier:50,type:"skin",value:"golden",free:true}, // Ultimate free reward
+];
 function rN(lp){if(lp>=2000)return"Maître";const t=Math.min(4,Math.floor(lp/400));return`${TN[t]} ${4-Math.floor((lp-t*400)/100)}`}
 function rC(lp){if(lp>=2000)return TC[5];return TC[Math.min(4,Math.floor(lp/400))]}
 function cLP(m,o,w){const b=w?28:-18,s=w?Math.max(.6,1.3-m/3e3):Math.min(1.4,.8+m/3e3),d=o-m,x=w?Math.max(0,d/200)*5:Math.min(0,d/200)*3;return Math.round(b*s+x)}
@@ -74,7 +105,12 @@ function endRound(gid,winner){const g=games.get(gid);if(!g||g.phase!=="play")ret
 
 function calcXP(won,kills,pups){let xp=won?50:15;xp+=kills*10;xp+=pups*3;xp+=10;return xp} // win=50,loss=15,per kill=10,per pup=3,participation=10
 function getLevel(xp){let lvl=1,need=100;while(xp>=need){xp-=need;lvl++;need=Math.floor(100+lvl*20)}return{level:lvl,xp,need}}
-function applyXP(u,xpGain){u.xp=(u.xp||0)+xpGain;const lv=getLevel(u.xp);u.level=lv.level}
+function checkSeasonReset(u){const sid=getSeasonId();if(u.lastSeason!==sid){
+  // Save hidden MMR = current LP, preserve for placement
+  u.hiddenMMR=u.lp||0;
+  // Reset LP but give soft placement: start at hiddenMMR * 0.3, capped at 400 (below Silver)
+  u.lp=Math.min(400,Math.floor((u.hiddenMMR||0)*0.3));
+  u.lastSeason=sid;pU(u);uLB(u)}}
 
 function endMatch(gid){const g=games.get(gid);if(!g)return;g.phase="mEnd";clearInterval(g.tick);const mw=g.sc.p1>=3?"p1":"p2",ml=mw==="p1"?"p2":"p1";const wu=gU(g.pl[mw].name),lu=gU(g.pl[ml].name);
   if(wu&&lu){const wd=cLP(wu.lp,lu.lp,true),ld2=cLP(lu.lp,wu.lp,false);const wxp=calcXP(true,g.mStats[mw].kills,g.mStats[mw].pups);const lxp=calcXP(false,g.mStats[ml].kills,g.mStats[ml].pups);
@@ -92,19 +128,28 @@ function endMatchDraw(gid){const g=games.get(gid);if(!g)return;g.phase="mEnd";cl
 
 io.on("connection",sock=>{
   onlineCount++;io.emit("onlineCount",onlineCount);console.log("+",sock.id,onlineCount);
-  sock.on("register",({username,password},cb)=>{if(!username||!password||username.length<3)return cb({error:"Pseudo trop court"});if(gU(username))return cb({error:"Pseudo déjà pris"});const u={username,password,lp:0,wins:0,losses:0,games:0,avatar:"🐧",skin:"classic",arena:"glacier",flocons:500,ownedSkins:["classic"],ownedArenas:["glacier"],featuredBadges:[null,null,null],kills:0,bombsPlaced:0,pupsCollected:0,bestStreak:0,currentStreak:0,history:[],xp:0,level:1};pU(u);uLB(u);cb({user:u})});
-  sock.on("login",({username,password},cb)=>{const u=gU(username);if(!u)return cb({error:"Compte introuvable"});if(u.password!==password)return cb({error:"Mot de passe incorrect"});cb({user:u})});
-  sock.on("getUser",({username},cb)=>{const u=gU(username);if(u){const{password,...safe}=u;cb({user:safe})}else cb({user:null})});
+  sock.on("register",({username,password},cb)=>{if(!username||!password||username.length<3)return cb({error:"Pseudo trop court"});if(gU(username))return cb({error:"Pseudo déjà pris"});const u={username,password,lp:0,wins:0,losses:0,games:0,avatar:"🐧",skin:"classic",arena:"glacier",flocons:500,ownedSkins:["classic"],ownedArenas:["glacier"],featuredBadges:[null,null,null],kills:0,bombsPlaced:0,pupsCollected:0,bestStreak:0,currentStreak:0,history:[],xp:0,level:1,ownedEmotes:["1","2","3","4"],selectedEmotes:["1","2","3","4",null]};pU(u);uLB(u);cb({user:u})});
+  sock.on("login",({username,password},cb)=>{const u=gU(username);if(!u)return cb({error:"Compte introuvable"});if(u.password!==password)return cb({error:"Mot de passe incorrect"});checkSeasonReset(u);cb({user:u})});
+  sock.on("getUser",({username},cb)=>{const u=gU(username);if(u){checkSeasonReset(u);const{password,...safe}=u;cb({user:safe})}else cb({user:null})});
   sock.on("updateUser",({user},cb)=>{const ex=gU(user.username);if(ex){const upd={...ex,...user,password:ex.password};pU(upd);uLB(upd);cb({user:upd})}else cb({error:"Not found"})});
   sock.on("getLB",(_,cb)=>cb({lb:gLB()}));
   sock.on("getChat",(_,cb)=>cb({chat:gCh()}));
-  sock.on("sendChat",({username,message})=>{const u=gU(username);if(!u||!message?.trim())return;const c=gCh();c.push({u:username,m:message.trim(),t:Date.now(),r:rN(u.lp),rc:rC(u.lp),a:u.avatar||"🐧"});if(c.length>50)c.splice(0,c.length-50);sCh(c);io.emit("chatUpdate",{chat:c})});
+  sock.on("sendChat",({username,message})=>{const u=gU(username);if(!u||!message?.trim())return;const c=gCh();c.push({u:username,m:message.trim(),t:Date.now(),r:rN(u.lp),rc:rC(u.lp),a:u.avatar||"🐧"});if(c.length>30)c.splice(0,c.length-30);sCh(c);io.emit("chatUpdate",{chat:c})});
   sock.on("gameChat",({message})=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g)return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";bc(g,"gameChatMsg",{username:g.pl[pid].name,message:message?.trim(),pid})});
   sock.on("findMatch",({username,lp})=>{const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1);queue.push({socket:sock,username,lp});sock.emit("queueUpdate",{pos:queue.length});findMatch()});
   sock.on("cancelQueue",()=>{const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1)});
+  sock.on("getSeasonInfo",(_,cb)=>cb({seasonId:getSeasonId(),seasonEnd:getSeasonEnd(),rewards:SEASON_REWARDS}));
+  sock.on("claimReward",({tier},cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}const sid=getSeasonId();if(!u.seasonData)u.seasonData={};if(!u.seasonData[sid])u.seasonData[sid]={xp:0,claimed:[],hasPass:false};const info=getTier(u.seasonData[sid].xp);const r=SEASON_REWARDS.find(x=>x.tier===tier);if(!r){cb({error:"Palier introuvable"});return}if(info.tier<tier){cb({error:"Palier pas encore atteint"});return}if(u.seasonData[sid].claimed.includes(tier)){cb({error:"Déjà réclamé"});return}if(!r.free&&!u.seasonData[sid].hasPass){cb({error:"Passe de combat requis"});return}
+    // Grant reward
+    if(r.type==="flocons")u.flocons=(u.flocons||0)+r.value;
+    else if(r.type==="skin"&&!u.ownedSkins.includes(r.value))u.ownedSkins.push(r.value);
+    else if(r.type==="arena"&&!u.ownedArenas.includes(r.value))u.ownedArenas.push(r.value);
+    else if(r.type==="emote"&&!u.ownedEmotes.includes(r.value))u.ownedEmotes.push(r.value);
+    u.seasonData[sid].claimed.push(tier);pU(u);cb({user:u})});
+  sock.on("buyBattlePass",(_,cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}const PASS_PRICE=500;if((u.flocons||0)<PASS_PRICE){cb({error:"Pas assez de Flocons"});return}const sid=getSeasonId();if(!u.seasonData)u.seasonData={};if(!u.seasonData[sid])u.seasonData[sid]={xp:0,claimed:[],hasPass:false};if(u.seasonData[sid].hasPass){cb({error:"Passe déjà acheté"});return}u.flocons-=PASS_PRICE;u.seasonData[sid].hasPass=true;pU(u);cb({user:u})});
   sock.on("move",dir=>{if(dir&&dir.dx!==undefined)pInput.set(sock.id,dir)});
   sock.on("bomb",()=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g||g.phase!=="play")return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";const e=g.ent[pid];if(!e.alive||e.bL<=0||g.bombs.some(b=>b.gx===e.gx&&b.gy===e.gy))return;e.bL--;g.bombs.push({gx:e.gx,gy:e.gy,px:e.gx*CELL+CELL/2,py:e.gy*CELL+CELL/2,range:e.range,owner:pid,timer:Date.now()+FUSE,id:Math.random().toString(36)});g.mStats[pid].bombs++});
-  sock.on("emote",({key})=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g)return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";g.emotes.push({pid,key,time:Date.now()})});
+  sock.on("emote",({key})=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g)return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";const u=gU(g.pl[pid].name);if(!u||!(u.selectedEmotes||[]).includes(key))return;g.emotes.push({pid,key,time:Date.now()})});
   // Draw proposal
   sock.on("proposeDraw",()=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g||g.phase==="mEnd")return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";if(g.drawUsed[pid])return;g.drawUsed[pid]=true;g.drawProposed=pid;const other=pid==="p1"?"p2":"p1";g.pl[other].sock.emit("drawProposal",{from:g.pl[pid].name})});
   sock.on("respondDraw",({accept})=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g||!g.drawProposed)return;if(accept){endMatchDraw(gid)}else{const proposer=g.drawProposed;g.drawProposed=null;g.pl[proposer].sock.emit("drawRejected",{})}});
