@@ -71,12 +71,31 @@ const otherBlock=bombs.some(ob=>{if(ob.id===bomb.id)return false;const k=g.kicke
 const queue=[],games=new Map(),pGame=new Map(),pInput=new Map();
 let onlineCount=0;
 
-function findMatch(){if(queue.length<2)return;queue.sort((a,b)=>a.lp-b.lp);let bi=-1,bd=Infinity;for(let i=0;i<queue.length-1;i++){if(queue[i].username===queue[i+1].username)continue;const d=Math.abs(queue[i].lp-queue[i+1].lp);if(d<bd){bd=d;bi=i}}if(bi<0)return;const p1=queue.splice(bi+1,1)[0],p2=queue.splice(bi,1)[0];createGame(p1,p2)}
+function findMatch(){if(queue.length<2)return;queue.sort((a,b)=>a.lp-b.lp);let bi=-1,bd=Infinity;for(let i=0;i<queue.length-1;i++){if(queue[i].username===queue[i+1].username)continue;const d=Math.abs(queue[i].lp-queue[i+1].lp);if(d<bd){bd=d;bi=i}}if(bi<0)return;const p1=queue.splice(bi+1,1)[0],p2=queue.splice(bi,1)[0];proposeMatch(p1,p2)}
+
+// MATCH PROPOSAL — 10s to accept
+const proposals=new Map(); // proposalId -> {p1,p2,accepted:{p1:bool,p2:bool},timer}
+function proposeMatch(p1,p2){
+  const pid=`prop_${Date.now()}`;
+  const mkI=u=>{const uu=gU(u.username);return{username:u.username,lp:u.lp,skin:uu?.skin,arena:uu?.arena,avatar:uu?.avatar||"penguin"}};
+  const prop={id:pid,p1,p2,accepted:{p1:false,p2:false},timer:null};
+  proposals.set(pid,prop);
+  p1.socket.emit("matchProposal",{proposalId:pid,opp:mkI(p2)});
+  p2.socket.emit("matchProposal",{proposalId:pid,opp:mkI(p1)});
+  // 10s timeout
+  prop.timer=setTimeout(()=>{
+    const pr=proposals.get(pid);if(!pr)return;proposals.delete(pid);
+    // Put back whoever accepted into queue
+    if(pr.accepted.p1&&!pr.accepted.p2){queue.push(pr.p1);pr.p1.socket.emit("matchDeclined",{reason:"Adversaire n'a pas accepté"});pr.p2.socket.emit("matchDeclined",{reason:"Temps écoulé"})}
+    else if(pr.accepted.p2&&!pr.accepted.p1){queue.push(pr.p2);pr.p2.socket.emit("matchDeclined",{reason:"Adversaire n'a pas accepté"});pr.p1.socket.emit("matchDeclined",{reason:"Temps écoulé"})}
+    else{pr.p1.socket.emit("matchDeclined",{reason:"Temps écoulé"});pr.p2.socket.emit("matchDeclined",{reason:"Temps écoulé"})}
+    findMatch();
+  },10000)}
 
 function createGame(p1,p2){const gid=`g_${Date.now()}_${Math.random().toString(36).substr(2,4)}`;const u1=gU(p1.username),u2=gU(p2.username);
-  const g={id:gid,pl:{p1:{sock:p1.socket,name:p1.username,lp:p1.lp,skin:u1?.skin||"classic",arena:u1?.arena||"glacier",avatar:u1?.avatar||"🐧"},p2:{sock:p2.socket,name:p2.username,lp:p2.lp,skin:u2?.skin||"classic",arena:u2?.arena||"glacier",avatar:u2?.avatar||"🐧"}},sc:{p1:0,p2:0},rn:0,phase:"cd",cd:3,grid:null,ent:null,bombs:[],expl:[],pups:[],kicked:[],emotes:[],sd:false,sdO:[],sdI:0,sdL:0,rStart:0,tick:null,cdInt:null,curArena:"glacier",drawProposed:null,drawUsed:{p1:false,p2:false},mStats:{p1:{bombs:0,pups:0,kills:0},p2:{bombs:0,pups:0,kills:0}}};
+  const g={id:gid,pl:{p1:{sock:p1.socket,name:p1.username,lp:p1.lp,skin:u1?.skin||"classic",arena:u1?.arena||"glacier",avatar:u1?.avatar||"penguin"},p2:{sock:p2.socket,name:p2.username,lp:p2.lp,skin:u2?.skin||"classic",arena:u2?.arena||"glacier",avatar:u2?.avatar||"penguin"}},sc:{p1:0,p2:0},rn:0,phase:"cd",cd:3,grid:null,ent:null,bombs:[],expl:[],pups:[],kicked:[],emotes:[],emoteCD:{p1:0,p2:0},sd:false,sdO:[],sdI:0,sdL:0,rStart:0,tick:null,cdInt:null,curArena:"glacier",drawProposed:null,drawUsed:{p1:false,p2:false},mStats:{p1:{bombs:0,pups:0,kills:0},p2:{bombs:0,pups:0,kills:0}}};
   games.set(gid,g);pGame.set(p1.socket.id,gid);pGame.set(p2.socket.id,gid);pInput.set(p1.socket.id,{dx:0,dy:0});pInput.set(p2.socket.id,{dx:0,dy:0});
-  const mkI=u=>({username:u?.username,lp:u?.lp,skin:u?.skin,arena:u?.arena,avatar:u?.avatar||"🐧"});
+  const mkI=u=>({username:u?.username,lp:u?.lp,skin:u?.skin,arena:u?.arena,avatar:u?.avatar||"penguin"});
   p1.socket.emit("matchFound",{gid,you:"p1",opp:mkI(u2),me:mkI(u1)});
   p2.socket.emit("matchFound",{gid,you:"p2",opp:mkI(u1),me:mkI(u2)});
   startCD(gid)}
@@ -165,6 +184,16 @@ io.on("connection",sock=>{
     if(pGame.has(sock.id)){sock.emit("queueUpdate",{pos:0});return}
     queue.push({socket:sock,username,lp});sock.emit("queueUpdate",{pos:queue.length});findMatch()});
   sock.on("cancelQueue",()=>{const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1)});
+  sock.on("acceptMatch",({proposalId})=>{const pr=proposals.get(proposalId);if(!pr)return;
+    const role=pr.p1.socket.id===sock.id?"p1":"p2";pr.accepted[role]=true;
+    // Notify other player
+    const other=role==="p1"?pr.p2:pr.p1;other.socket.emit("matchAccepted",{who:role});
+    if(pr.accepted.p1&&pr.accepted.p2){clearTimeout(pr.timer);proposals.delete(proposalId);createGame(pr.p1,pr.p2)}});
+  sock.on("declineMatch",({proposalId})=>{const pr=proposals.get(proposalId);if(!pr)return;clearTimeout(pr.timer);proposals.delete(proposalId);
+    const role=pr.p1.socket.id===sock.id?"p1":"p2";const other=role==="p1"?"p2":"p1";
+    // Put the OTHER player back in queue
+    queue.push(pr[other]);pr[other].socket.emit("matchDeclined",{reason:"Adversaire a refusé"});
+    pr[role].socket.emit("matchDeclined",{reason:"Match refusé"});findMatch()});
   sock.on("getSeasonInfo",(_,cb)=>cb({seasonId:getSeasonId(),seasonEnd:getSeasonEnd(),rewards:SEASON_REWARDS}));
   sock.on("getShopRotation",(_,cb)=>{
     const SKIN_POOL=["fire","toxic","royal","golden","shadow","captain","military","samurai","ninja","wizard","chef","astronaut","pirate","cowboy","hockey","disco","ghost","zombie","robot","cyber","neon","rainbow","crystal_skin","frost","inferno_king"];
