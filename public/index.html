@@ -7,8 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}body{background:#0B1E36;color:#E8F0F8;font-family:'Nunito',sans-serif;overflow-x:hidden;overflow-y:auto}
-.zoomed{zoom:1.15}
+*{margin:0;padding:0;box-sizing:border-box}body{background:#0B1E36;color:#E8F0F8;font-family:'Nunito',sans-serif;overflow:hidden;height:100vh}
 .f1{font-family:'Fredoka',sans-serif}
 input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14px;border-radius:6px;font-size:15px;width:100%;outline:none;font-family:'Nunito',sans-serif;box-sizing:border-box}
 .btn{display:inline-block;background:linear-gradient(135deg,#0EA5E9,#38BDF8);color:#FFF;border:none;padding:13px 26px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Fredoka',sans-serif;text-align:center}
@@ -67,31 +66,37 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
 <div style="text-align:center;margin-top:12px"><button style="background:none;border:none;color:#7A9BBF;font-size:12px;cursor:pointer" onclick="go('landing')">← Accueil</button></div></div></div>
 
 <!-- MENU -->
-<div id="pg-menu" class="hidden" style="height:100vh;display:flex;background:radial-gradient(ellipse at 30% 20%,#15334D,#0B1E36);position:relative;overflow:hidden">
-<!-- Admin top-right -->
-<div style="position:absolute;top:10px;right:12px;z-index:20">
-  <button id="adminBtnTop" class="btn2" style="padding:5px 10px;font-size:10px;font-weight:700;display:none;background:linear-gradient(135deg,#F59E0B22,#F59E0B11);border-color:#F59E0B55;color:#F59E0B" onclick="go('admin')">⚙️ ADMIN</button>
+<div id="pg-menu" class="hidden" style="position:fixed;inset:0;display:flex;background:#0B1E36">
+<!-- Admin button -->
+<div style="position:absolute;top:8px;right:10px;z-index:20"><button id="adminBtnTop" class="btn2" style="padding:4px 10px;font-size:10px;display:none;border-color:#F59E0B55;color:#F59E0B" onclick="go('admin')">⚙️</button></div>
+<!-- LEFT PANEL: Chat -->
+<div style="flex:1;display:flex;flex-direction:column;background:#0F2235;border-right:1px solid #1E4D7A">
+  <div class="f1" style="padding:14px 18px 8px;font-size:14px;color:#67D4FF;flex-shrink:0">💬 CHAT GLOBAL</div>
+  <div id="gCB" style="flex:1;overflow-y:auto;padding:4px 18px;display:flex;flex-direction:column;gap:3px;min-height:0"></div>
+  <div style="padding:10px 18px;display:flex;gap:8px;flex-shrink:0;border-top:1px solid #1E4D7A33">
+    <input id="gCI" placeholder="Écrire un message..." onkeydown="if(event.key==='Enter')sendGC()" style="flex:1;padding:10px 12px;font-size:14px">
+    <button class="btn" style="padding:10px 16px;font-size:14px" onclick="sendGC()">→</button>
+  </div>
+  <div style="padding:4px 18px 10px;flex-shrink:0"><button style="background:none;border:none;color:#7A9BBF;font-size:11px;cursor:pointer;padding:0" onclick="logout()">Déconnexion</button></div>
 </div>
-<!-- LEFT: Chat (40%) -->
-<div style="flex:0 0 40%;display:flex;flex-direction:column;padding:12px 14px;background:#102840;border-right:1px solid #1E4D7A;max-height:100vh">
-<h2 class="f1" style="font-size:13px;color:#67D4FF;margin-bottom:6px;flex-shrink:0">💬 CHAT GLOBAL</h2>
-<div id="gCB" style="flex:1;background:#0B1E36;border-radius:8px;border:1px solid #1E4D7A;padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;min-height:0"></div>
-<div style="display:flex;gap:6px;margin-top:8px;flex-shrink:0"><input id="gCI" placeholder="Écrire un message..." onkeydown="if(event.key==='Enter')sendGC()" style="font-size:13px;flex:1;padding:8px"><button class="btn" style="padding:8px 14px;font-size:13px" onclick="sendGC()">→</button></div>
-<button class="btn2" style="background:transparent;color:#7A9BBF;font-size:9px;padding:3px;margin-top:4px;flex-shrink:0" onclick="logout()">Déconnexion</button>
-</div>
-<!-- RIGHT: Profile + Buttons (60%) -->
-<div style="flex:1;display:flex;flex-direction:column;padding:12px 16px;max-height:100vh;overflow:hidden">
-<div id="pCard" style="background:#15334D;border-radius:10px;padding:10px;border:1px solid #1E4D7A;cursor:pointer;flex-shrink:0" onclick="profileTarget=me;go('profile')"></div>
-<div id="mResult" style="display:none;border-radius:8px;padding:6px;text-align:center"></div>
-<div style="display:flex;flex-direction:column;gap:5px;flex:1;justify-content:center;margin-top:6px">
-  <button class="btn" style="width:100%;padding:12px;font-size:16px;border-radius:10px" onclick="go('cosmetics')">🎨 Personnalisation</button>
-  <button class="btn" style="width:100%;padding:12px;font-size:16px;border-radius:10px" onclick="go('shop')">🏪 Boutique</button>
-  <button class="btn" style="width:100%;padding:12px;font-size:16px;border-radius:10px;position:relative" onclick="go('news')">📰 NEWS<span id="newsBadge2" style="display:none;position:absolute;top:6px;right:10px;background:#EF4444;color:#FFF;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px">1</span></button>
-  <button class="btn" style="width:100%;padding:12px;font-size:16px;border-radius:10px" onclick="go('lb')">🏆 Classement</button>
-  <button class="btn" style="width:100%;padding:14px;font-size:18px;border-radius:10px;background:linear-gradient(135deg,#0EA5E9,#38BDF8);box-shadow:0 4px 16px rgba(14,165,233,.35);letter-spacing:1px" onclick="findMatch()">⚔️ JOUER</button>
-</div>
-<button class="btn2" style="width:100%;padding:8px;font-size:11px;border-radius:8px;background:linear-gradient(135deg,#A78BFA22,#A78BFA11);border-color:#A78BFA55;color:#A78BFA;flex-shrink:0;margin-top:4px" onclick="go('pass')">🎫 Passe de Combat</button>
-<div id="onlineInd" style="color:#34D399;font-size:9px;text-align:center;flex-shrink:0;margin-top:3px" class="f1"></div>
+<!-- RIGHT PANEL: Profile + Navigation -->
+<div style="flex:0 0 420px;display:flex;flex-direction:column;padding:16px 20px;justify-content:space-between">
+  <!-- Profile Card -->
+  <div id="pCard" style="background:#15334D;border-radius:14px;padding:16px;border:1px solid #1E4D7A;cursor:pointer;flex-shrink:0" onclick="profileTarget=me;go('profile')"></div>
+  <div id="mResult" style="display:none"></div>
+  <!-- Navigation Buttons -->
+  <div style="display:flex;flex-direction:column;gap:10px;padding:12px 0">
+    <button class="btn" style="width:100%;padding:18px;font-size:20px;border-radius:14px;font-weight:700" onclick="go('cosmetics')">🎨 Personnalisation</button>
+    <button class="btn" style="width:100%;padding:18px;font-size:20px;border-radius:14px;font-weight:700" onclick="go('shop')">🏪 Boutique</button>
+    <button class="btn" style="width:100%;padding:18px;font-size:20px;border-radius:14px;font-weight:700;position:relative" onclick="go('news')">📰 NEWS<span id="newsBadge2" style="display:none;position:absolute;top:10px;right:14px;background:#EF4444;color:#FFF;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">1</span></button>
+    <button class="btn" style="width:100%;padding:18px;font-size:20px;border-radius:14px;font-weight:700" onclick="go('lb')">🏆 Classement</button>
+    <button class="btn" style="width:100%;padding:20px;font-size:22px;border-radius:14px;font-weight:700;background:linear-gradient(135deg,#0EA5E9,#38BDF8);box-shadow:0 4px 20px rgba(14,165,233,.4);letter-spacing:1px" onclick="findMatch()">⚔️ JOUER</button>
+  </div>
+  <!-- Bottom: Pass + Online -->
+  <div style="flex-shrink:0">
+    <button class="btn2" style="width:100%;padding:10px;font-size:13px;border-radius:10px;background:linear-gradient(135deg,#A78BFA22,#A78BFA11);border-color:#A78BFA55;color:#A78BFA;margin-bottom:6px" onclick="go('pass')">🎫 Passe de Combat</button>
+    <div id="onlineInd" style="color:#34D399;font-size:10px;text-align:center" class="f1"></div>
+  </div>
 </div>
 </div>
 
@@ -310,9 +315,10 @@ socket.on("onlineCount",n=>{onlineCnt=n;const el=document.getElementById("online
 let profileTarget=null;
 const PGS=["landing","login","menu","queue","accept","shop","profile","lb","pass","cosmetics","news","admin","game"];
 function go(p){PGS.forEach(id=>{const el=document.getElementById("pg-"+id);if(el)el.classList.add("hidden")});const el=document.getElementById("pg-"+p);if(el)el.classList.remove("hidden");
-  document.body.style.overflow=p==="game"?"hidden":"auto";
-  // Apply zoom to all pages except game
-  document.documentElement.style.zoom=p==="game"?"1":"1.15";
+  // Lock scroll for game and menu, allow for other pages
+  const noScroll=["game","menu","queue","accept","landing","login"];
+  document.body.style.overflow=noScroll.includes(p)?"hidden":"auto";
+  document.body.style.height=noScroll.includes(p)?"100vh":"auto";
   if(p==="menu"){renderMenu();loadGC();loadLB();checkUnreadNews()}if(p==="shop")renderShop();if(p==="profile")renderProf(profileTarget||me);if(p==="lb")loadLB();if(p==="pass")renderPass();if(p==="cosmetics")renderCosmetics();if(p==="news")renderNews();if(p==="admin")renderAdmin()}
 
 function setTab(r){isReg=!!r;document.getElementById("tabL").style.background=r?"transparent":"#0EA5E9";document.getElementById("tabL").style.color=r?"#7A9BBF":"#FFF";document.getElementById("tabR").style.background=r?"#0EA5E9":"transparent";document.getElementById("tabR").style.color=r?"#FFF":"#7A9BBF";document.getElementById("authBtn").textContent=r?"CRÉER MON COMPTE":"JOUER"}
