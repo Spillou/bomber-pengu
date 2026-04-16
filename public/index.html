@@ -65,6 +65,7 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
 <div id="mResult" style="display:none;border-radius:8px;padding:10px;text-align:center"></div>
 <button class="btn" style="width:100%;padding:15px;font-size:16px" onclick="findMatch()">⚔️ MATCH RANKED</button>
 <div style="display:flex;gap:6px"><button class="btn2" style="flex:1" onclick="go('shop')">🏪 Boutique</button><button class="btn2" style="flex:1" onclick="go('lb')">🏆 Classement</button></div>
+<button class="btn2" style="width:100%;background:linear-gradient(135deg,#A78BFA33,#A78BFA11);border-color:#A78BFA55;color:#A78BFA" onclick="go('pass')">🎫 PASSE DE COMBAT</button>
 <div style="background:#15334D;border-radius:8px;padding:8px;border:1px solid #1E4D7A"><div style="color:#7A9BBF;font-size:9px;margin-bottom:4px" class="f1">AVATAR</div><div id="avGrid" style="display:flex;flex-wrap:wrap;gap:3px"></div></div>
 <button class="btn2" style="width:100%;background:transparent;color:#7A9BBF;font-size:10px;padding:5px;margin-top:auto" onclick="logout()">Déconnexion</button>
 </div>
@@ -82,6 +83,8 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
 <div id="pg-profile" class="page hidden" style="align-items:flex-start;padding:24px"><div style="max-width:800px;width:100%;margin:0 auto" id="profC"></div></div>
 <!-- LEADERBOARD -->
 <div id="pg-lb" class="page hidden"><div style="max-width:560px;width:100%" id="lbC"></div></div>
+<!-- BATTLE PASS -->
+<div id="pg-pass" class="page hidden" style="align-items:flex-start;padding:24px"><div style="max-width:900px;width:100%;margin:0 auto" id="passC"></div></div>
 
 <!-- GAME — bigger layout, emotes+chat below -->
 <div id="pg-game" class="hidden" style="min-height:100vh;display:flex;flex-direction:column;background:radial-gradient(ellipse at 50% 30%,#15334D,#0B1E36);overflow:hidden">
@@ -137,9 +140,9 @@ socket.on("onlineCount",n=>{onlineCnt=n;const el=document.getElementById("online
 
 // PAGES
 let profileTarget=null;
-const PGS=["landing","login","menu","queue","shop","profile","lb","game"];
+const PGS=["landing","login","menu","queue","shop","profile","lb","pass","game"];
 function go(p){PGS.forEach(id=>{const el=document.getElementById("pg-"+id);if(el)el.classList.add("hidden")});const el=document.getElementById("pg-"+p);if(el)el.classList.remove("hidden");
-  if(p==="menu"){renderMenu();loadGC();loadLB()}if(p==="shop")renderShop();if(p==="profile")renderProf(profileTarget||me);if(p==="lb")loadLB()}
+  if(p==="menu"){renderMenu();loadGC();loadLB()}if(p==="shop")renderShop();if(p==="profile")renderProf(profileTarget||me);if(p==="lb")loadLB();if(p==="pass")renderPass()}
 
 function setTab(r){isReg=!!r;document.getElementById("tabL").style.background=r?"transparent":"#0EA5E9";document.getElementById("tabL").style.color=r?"#7A9BBF":"#FFF";document.getElementById("tabR").style.background=r?"#0EA5E9":"transparent";document.getElementById("tabR").style.color=r?"#FFF":"#7A9BBF";document.getElementById("authBtn").textContent=r?"CRÉER MON COMPTE":"JOUER"}
 function doAuth(){document.getElementById("loginErr").style.display="none";const u=document.getElementById("inU").value.trim(),p=document.getElementById("inP").value.trim();if(!u||!p){document.getElementById("loginErr").style.display="block";document.getElementById("loginErr").textContent="Remplis tous les champs";return}socket.emit(isReg?"register":"login",{username:u,password:p},r=>{if(r.error){document.getElementById("loginErr").style.display="block";document.getElementById("loginErr").textContent=r.error;return}me=r.user;go("menu")})}
@@ -194,6 +197,38 @@ function buyAr(id,p){if((me.flocons||0)<p)return;socket.emit("updateUser",{user:
 function buyEm(k,p){if((me.flocons||0)<p)return;const newOwned=[...(me.ownedEmotes||["1","2","3","4"]),k];socket.emit("updateUser",{user:{username:me.username,flocons:(me.flocons||0)-p,ownedEmotes:newOwned}},r=>{if(r.user)me=r.user;renderShop()})}
 function toggleEm(k){const sel=[...(me.selectedEmotes||["1","2","3","4",null])];const idx=sel.indexOf(k);if(idx>=0){sel[idx]=null}else{const empty=sel.indexOf(null);if(empty>=0)sel[empty]=k;else return}socket.emit("updateUser",{user:{username:me.username,selectedEmotes:sel}},r=>{if(r.user)me=r.user;renderShop()})}
 function unequipEm(i){const sel=[...(me.selectedEmotes||["1","2","3","4",null])];if(!sel[i])return;sel[i]=null;socket.emit("updateUser",{user:{username:me.username,selectedEmotes:sel}},r=>{if(r.user)me=r.user;renderShop()})}
+
+// BATTLE PASS
+let seasonInfo=null;
+function tierXPNeeded(t){return 500+t*50}
+function getSeasonTier(xp){let t=0,rem=xp||0;while(t<50&&rem>=tierXPNeeded(t)){rem-=tierXPNeeded(t);t++}return{tier:t,progress:rem,needed:t<50?tierXPNeeded(t):0}}
+function fmtTimeLeft(endMs){const d=Math.max(0,endMs-Date.now());const days=Math.floor(d/86400000);const hrs=Math.floor((d%86400000)/3600000);return days>0?`${days}j ${hrs}h`:`${hrs}h`}
+function rewardIcon(r){if(r.type==="flocons")return"❄️";if(r.type==="skin")return"🐧";if(r.type==="arena")return"🗺️";if(r.type==="emote")return EM[r.value]?.e||"😀";return"🎁"}
+function rewardLabel(r){if(r.type==="flocons")return`${r.value} Flocons`;if(r.type==="skin"){const s=SKL.find(x=>x.id===r.value);return`Skin ${s?.n||r.value}`}if(r.type==="arena"){const a=ARL.find(x=>x.id===r.value);return`Arène ${a?.n||r.value}`}if(r.type==="emote")return`Émote ${EM[r.value]?.t||r.value}`;return"?"}
+function renderPass(){if(!me)return;
+  socket.emit("getSeasonInfo",null,d=>{seasonInfo=d;const sid=d.seasonId;const sd=(me.seasonData||{})[sid]||{xp:0,claimed:[],hasPass:false};const tierInfo=getSeasonTier(sd.xp);const hasPass=sd.hasPass;
+  document.getElementById("passC").innerHTML=`
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+  <div><h2 class="f1" style="font-size:22px;color:#A78BFA;margin:0">🎫 PASSE DE COMBAT</h2><div style="color:#7A9BBF;font-size:12px">Saison ${sid} — ${fmtTimeLeft(d.seasonEnd)} restants</div></div>
+  <div style="display:flex;align-items:center;gap:8px;background:#15334D;padding:8px 14px;border-radius:8px;border:1px solid #1E4D7A"><span style="font-size:18px">❄️</span><span style="color:#FFB347;font-weight:700;font-size:18px" class="f1">${me.flocons||0}</span></div>
+</div>
+<div style="background:#15334D;border:1px solid #A78BFA55;border-radius:12px;padding:16px;margin-bottom:20px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div class="f1" style="font-size:14px;color:#7A9BBF">PALIER ACTUEL</div><div style="display:flex;align-items:center;gap:10px"><div class="f1" style="font-size:32px;color:#A78BFA;font-weight:700">${tierInfo.tier}</div><div style="color:#7A9BBF;font-size:12px">/ 50</div></div></div>
+  ${tierInfo.tier<50?`<div style="background:#1E4D7A;border-radius:3px;height:8px;overflow:hidden;margin-bottom:4px"><div style="height:100%;background:linear-gradient(90deg,#A78BFA,#C4B5FD);width:${Math.round(tierInfo.progress/tierInfo.needed*100)}%"></div></div><div style="font-size:11px;color:#A78BFA" class="f1">${tierInfo.progress} / ${tierInfo.needed} XP jusqu'au palier ${tierInfo.tier+1}</div>`:`<div style="color:#FFD700;font-size:13px" class="f1">✨ Passe complété !</div>`}
+</div>
+${!hasPass?`<div style="background:linear-gradient(135deg,#A78BFA22,#FFD70022);border:2px solid #A78BFA;border-radius:12px;padding:16px;margin-bottom:20px;text-align:center"><div class="f1" style="font-size:16px;color:#A78BFA;margin-bottom:6px">🔓 Débloque le Passe Premium</div><div style="color:#7A9BBF;font-size:13px;margin-bottom:12px">Accède à toutes les récompenses (${SEASON_REWARDS_BP_COUNT} skins/arènes/émotes exclusifs)</div><button class="btn" style="background:linear-gradient(135deg,#A78BFA,#C4B5FD);padding:12px 30px;font-size:15px" onclick="buyPass()">💎 500 Flocons</button></div>`:`<div style="background:#34D39922;border:1px solid #34D399;border-radius:8px;padding:10px;margin-bottom:20px;text-align:center" class="f1"><span style="color:#34D399;font-weight:700">✓ Passe Premium actif</span></div>`}
+<h3 class="f1" style="color:#67D4FF;font-size:14px;margin-bottom:10px">📦 RÉCOMPENSES</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:20px">${d.rewards.map(r=>{const unlocked=tierInfo.tier>=r.tier;const claimed=sd.claimed.includes(r.tier);const canClaim=unlocked&&!claimed&&(r.free||hasPass);const locked=!r.free&&!hasPass;return`<div style="background:${claimed?"rgba(52,211,153,.1)":unlocked?"#15334D":"rgba(30,77,122,.3)"};border:2px solid ${claimed?"#34D399":r.free?"#67D4FF55":"#A78BFA55"};border-radius:10px;padding:12px;text-align:center;position:relative;opacity:${unlocked?1:.55}">
+${r.free?'<div style="position:absolute;top:4px;right:4px;font-size:8px;background:#67D4FF;color:#0B1E36;padding:1px 4px;border-radius:3px;font-weight:700" class="f1">GRATUIT</div>':'<div style="position:absolute;top:4px;right:4px;font-size:8px;background:#A78BFA;color:#0B1E36;padding:1px 4px;border-radius:3px;font-weight:700" class="f1">PREMIUM</div>'}
+<div class="f1" style="font-size:11px;color:#7A9BBF;margin-bottom:4px">PALIER ${r.tier}</div>
+<div style="font-size:32px;margin:4px 0">${rewardIcon(r)}</div>
+<div style="font-size:11px;font-weight:700;margin-bottom:6px">${rewardLabel(r)}</div>
+${claimed?'<div style="color:#34D399;font-size:11px;font-weight:700" class="f1">✓ RÉCLAMÉ</div>':canClaim?`<button class="btn" style="padding:4px 10px;font-size:11px;width:100%" onclick="claimPassReward(${r.tier})">RÉCLAMER</button>`:locked?'<div style="color:#A78BFA;font-size:10px" class="f1">🔒 Passe requis</div>':'<div style="color:#7A9BBF;font-size:10px" class="f1">🔒 Palier non atteint</div>'}
+</div>`}).join("")}</div>
+<button class="btn2" style="width:100%;padding:14px;font-size:15px" onclick="go('menu')">← RETOUR</button>`})}
+const SEASON_REWARDS_BP_COUNT=12;
+function buyPass(){socket.emit("buyBattlePass",null,r=>{if(r.error){alert(r.error);return}if(r.user)me=r.user;renderPass()})}
+function claimPassReward(tier){socket.emit("claimReward",{tier},r=>{if(r.error){alert(r.error);return}if(r.user)me=r.user;renderPass()})}
 
 // MATCHMAKING
 function findMatch(){socket.emit("findMatch",{username:me.username,lp:me.lp||0});go("queue")}
