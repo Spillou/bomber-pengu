@@ -55,6 +55,34 @@ function rN(lp){if(lp>=2000)return"Maître";const t=Math.min(4,Math.floor(lp/400
 function rC(lp){if(lp>=2000)return TC[5];return TC[Math.min(4,Math.floor(lp/400))]}
 function getTierIdx(lp){return Math.min(5,Math.floor((lp||0)/400))} // 0=Bronze,1=Argent,2=Or,3=Platine,4=Diamant,5=Maître
 
+// --- DAILY QUESTS ---
+const QUEST_DEFS=[
+  {id:"win1",d:"Gagne 1 match",goal:1,stat:"wins",reward:50},
+  {id:"win3",d:"Gagne 3 matchs",goal:3,stat:"wins",reward:150},
+  {id:"play3",d:"Joue 3 parties",goal:3,stat:"games",reward:80},
+  {id:"play5",d:"Joue 5 parties",goal:5,stat:"games",reward:120},
+  {id:"kill3",d:"Fais 3 kills",goal:3,stat:"kills",reward:100},
+  {id:"kill5",d:"Fais 5 kills",goal:5,stat:"kills",reward:180},
+  {id:"pup5",d:"Ramasse 5 power-ups",goal:5,stat:"pups",reward:60},
+  {id:"bomb10",d:"Pose 10 bombes",goal:10,stat:"bombs",reward:70},
+];
+function getDailyQuestSeed(){const d=new Date();return`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}-${String(d.getUTCDate()).padStart(2,"0")}`}
+function getDailyQuests(){const seed=getDailyQuestSeed();const s=seed.split("-").reduce((a,b)=>a+parseInt(b),0);
+  // Pick 3 quests deterministically
+  const shuffled=[...QUEST_DEFS].map((v,i)=>({v,k:(s+i*997)%QUEST_DEFS.length}));shuffled.sort((a,b)=>a.k-b.k);
+  return shuffled.slice(0,3).map(x=>x.v)}
+function getUserQuests(u){
+  const today=getDailyQuestSeed();
+  if(!u.quests||u.quests.day!==today){
+    u.quests={day:today,progress:{},claimed:[]};
+  }
+  return u.quests}
+function updateQuestProgress(u,stat,amount){
+  const q=getUserQuests(u);
+  if(!q.progress[stat])q.progress[stat]=0;
+  q.progress[stat]+=amount;
+  pU(u)}
+
 // --- MMR / LP SYSTEM (LoL-inspired) ---
 // MMR: hidden rating, Elo-based. Determines matchmaking + LP gains.
 // LP: visible rank points. LP gains depend on MMR vs displayed rank.
@@ -201,7 +229,10 @@ function endMatch(gid){const g=games.get(gid);if(!g)return;g.phase="mEnd";clearI
     const wxp=calcXP(true,g.mStats[mw].kills,g.mStats[mw].pups);const lxp=calcXP(false,g.mStats[ml].kills,g.mStats[ml].pups);
     wu.lp=Math.max(0,(wu.lp||0)+wd);wu.wins=(wu.wins||0)+1;wu.games=(wu.games||0)+1;wu.currentStreak=(wu.currentStreak||0)+1;wu.bestStreak=Math.max(wu.bestStreak||0,wu.currentStreak);wu.kills=(wu.kills||0)+g.mStats[mw].kills;wu.bombsPlaced=(wu.bombsPlaced||0)+g.mStats[mw].bombs;wu.pupsCollected=(wu.pupsCollected||0)+g.mStats[mw].pups;applyXP(wu,wxp);wu.history=[{t:Date.now(),vs:lu.username,r:"W",s:`${g.sc.p1}-${g.sc.p2}`,lp:wd},...(wu.history||[]).slice(0,19)];pU(wu);uLB(wu);
     lu.lp=Math.max(0,(lu.lp||0)+ld2);lu.losses=(lu.losses||0)+1;lu.games=(lu.games||0)+1;lu.currentStreak=0;lu.kills=(lu.kills||0)+g.mStats[ml].kills;lu.bombsPlaced=(lu.bombsPlaced||0)+g.mStats[ml].bombs;lu.pupsCollected=(lu.pupsCollected||0)+g.mStats[ml].pups;applyXP(lu,lxp);lu.history=[{t:Date.now(),vs:wu.username,r:"L",s:`${g.sc.p1}-${g.sc.p2}`,lp:ld2},...(lu.history||[]).slice(0,19)];pU(lu);uLB(lu);
-    g.pl[mw].sock.emit("matchEnd",{result:"win",lpD:wd,sc:g.sc,opp:lu.username,xp:wxp});g.pl[ml].sock.emit("matchEnd",{result:"lose",lpD:ld2,sc:g.sc,opp:wu.username,xp:lxp})}
+    g.pl[mw].sock.emit("matchEnd",{result:"win",lpD:wd,sc:g.sc,opp:lu.username,xp:wxp});g.pl[ml].sock.emit("matchEnd",{result:"lose",lpD:ld2,sc:g.sc,opp:wu.username,xp:lxp});
+    // Quest progress
+    updateQuestProgress(wu,"wins",1);updateQuestProgress(wu,"games",1);updateQuestProgress(wu,"kills",g.mStats[mw].kills);updateQuestProgress(wu,"pups",g.mStats[mw].pups);updateQuestProgress(wu,"bombs",g.mStats[mw].bombs);
+    updateQuestProgress(lu,"games",1);updateQuestProgress(lu,"kills",g.mStats[ml].kills);updateQuestProgress(lu,"pups",g.mStats[ml].pups);updateQuestProgress(lu,"bombs",g.mStats[ml].bombs)}
   setTimeout(()=>{pGame.delete(g.pl.p1.sock.id);pGame.delete(g.pl.p2.sock.id);pInput.delete(g.pl.p1.sock.id);pInput.delete(g.pl.p2.sock.id);games.delete(gid)},5000)}
 
 function endMatchDraw(gid){const g=games.get(gid);if(!g)return;g.phase="mEnd";clearInterval(g.tick);
@@ -275,6 +306,40 @@ io.on("connection",sock=>{
     else if(r.type==="avatar"){if(!u.ownedAvatars)u.ownedAvatars=["penguin","polar","seal"];if(!u.ownedAvatars.includes(r.value))u.ownedAvatars.push(r.value)}
     u.seasonData[sid].claimed.push(tier);pU(u);cb({user:u})});
   sock.on("buyBattlePass",(_,cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}const PASS_PRICE=500;if((u.flocons||0)<PASS_PRICE){cb({error:"Pas assez de Flocons"});return}const sid=getSeasonId();if(!u.seasonData)u.seasonData={};if(!u.seasonData[sid])u.seasonData[sid]={xp:0,claimed:[],hasPass:false};if(u.seasonData[sid].hasPass){cb({error:"Passe déjà acheté"});return}u.flocons-=PASS_PRICE;u.seasonData[sid].hasPass=true;pU(u);cb({user:u})});
+  sock.on("getQuests",(_,cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}
+    const q=getUserQuests(u);const defs=getDailyQuests();const endMs=getShopEndMs();
+    cb({quests:defs.map(d=>({...d,progress:q.progress[d.stat]||0,claimed:q.claimed.includes(d.id)})),endMs})});
+  sock.on("claimQuest",({questId},cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}
+    const q=getUserQuests(u);const defs=getDailyQuests();const d=defs.find(x=>x.id===questId);
+    if(!d){cb({error:"Quête introuvable"});return}if(q.claimed.includes(questId)){cb({error:"Déjà réclamé"});return}
+    if((q.progress[d.stat]||0)<d.goal){cb({error:"Quête pas encore terminée"});return}
+    q.claimed.push(questId);u.flocons=(u.flocons||0)+d.reward;pU(u);cb({user:u})});
+  // FRIENDS SYSTEM
+  sock.on("getFriends",(_,cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}
+    const friends=(u.friends||[]).map(f=>{const fu=gU(f);return fu?{username:fu.username,avatar:fu.avatar,lp:fu.lp,level:fu.level||1,online:Array.from(io.sockets.sockets.values()).some(s=>s.data?.username===f)}:null}).filter(Boolean);
+    const requests=(u.friendRequests||[]).map(f=>{const fu=gU(f);return fu?{username:fu.username,avatar:fu.avatar}:null}).filter(Boolean);
+    cb({friends,requests})});
+  sock.on("sendFriendRequest",({target},cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}
+    const t=gU(target);if(!t){cb({error:"Joueur introuvable"});return}
+    if(t.username===u.username){cb({error:"Tu ne peux pas t'ajouter toi-même"});return}
+    if(!t.friendRequests)t.friendRequests=[];if(!u.friends)u.friends=[];
+    if(u.friends.includes(target)){cb({error:"Déjà ami"});return}
+    if(t.friendRequests.includes(u.username)){cb({error:"Demande déjà envoyée"});return}
+    t.friendRequests.push(u.username);pU(t);
+    // Notify target if online
+    Array.from(io.sockets.sockets.values()).filter(s=>s.data?.username===target).forEach(s=>s.emit("friendRequest",{from:u.username}));
+    cb({ok:true})});
+  sock.on("acceptFriend",({from},cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}
+    if(!u.friendRequests||!u.friendRequests.includes(from)){cb({error:"Pas de demande"});return}
+    const f=gU(from);if(!f){cb({error:"Joueur introuvable"});return}
+    u.friendRequests=u.friendRequests.filter(x=>x!==from);if(!u.friends)u.friends=[];if(!f.friends)f.friends=[];
+    if(!u.friends.includes(from))u.friends.push(from);if(!f.friends.includes(u.username))f.friends.push(u.username);
+    pU(u);pU(f);cb({ok:true})});
+  sock.on("declineFriend",({from},cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}
+    if(!u.friendRequests)u.friendRequests=[];u.friendRequests=u.friendRequests.filter(x=>x!==from);pU(u);cb({ok:true})});
+  sock.on("removeFriend",({target},cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}
+    if(!u.friends)u.friends=[];u.friends=u.friends.filter(x=>x!==target);pU(u);
+    const t=gU(target);if(t){if(!t.friends)t.friends=[];t.friends=t.friends.filter(x=>x!==u.username);pU(t)}cb({ok:true})});
   sock.on("move",dir=>{if(dir&&dir.dx!==undefined)pInput.set(sock.id,dir)});
   sock.on("bomb",()=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g||g.phase!=="play")return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";const e=g.ent[pid];if(!e.alive||e.bL<=0||g.bombs.some(b=>b.gx===e.gx&&b.gy===e.gy))return;e.bL--;g.bombs.push({gx:e.gx,gy:e.gy,px:e.gx*CELL+CELL/2,py:e.gy*CELL+CELL/2,range:e.range,owner:pid,timer:Date.now()+FUSE,id:Math.random().toString(36)});g.mStats[pid].bombs++});
   sock.on("emote",({key})=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g)return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";const u=gU(g.pl[pid].name);if(!u||!(u.selectedEmotes||[]).includes(key))return;if(!g.emoteCD)g.emoteCD={p1:0,p2:0};const now=Date.now();if(now-g.emoteCD[pid]<2000)return;g.emoteCD[pid]=now;g.emotes.push({pid,key,time:now})});
