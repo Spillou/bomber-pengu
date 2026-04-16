@@ -478,7 +478,7 @@ let latestNewsId=null,lastReadNewsId=null;
 function checkUnreadNews(){try{lastReadNewsId=parseInt(localStorage.getItem("bp_lastNews")||"0")}catch(e){lastReadNewsId=0}
   socket.emit("getNews",null,r=>{const news=r.news||[];if(news.length===0){const b=document.getElementById("newsBadge2");if(b)b.style.display="none";return}latestNewsId=news[0].id;const unread=news.filter(n=>n.id>(lastReadNewsId||0)).length;const b=document.getElementById("newsBadge2");if(b){if(unread>0){b.style.display="inline";b.textContent=unread}else{b.style.display="none"}}})}
 socket.on("newsPublished",()=>checkUnreadNews());
-function markNewsRead(){if(latestNewsId){try{localStorage.setItem("bp_lastNews",String(latestNewsId))}catch(e){}lastReadNewsId=latestNewsId;document.getElementById("newsBadge").style.display="none"}}
+function markNewsRead(){if(latestNewsId){try{localStorage.setItem("bp_lastNews",String(latestNewsId))}catch(e){}lastReadNewsId=latestNewsId;const b=document.getElementById("newsBadge2");if(b)b.style.display="none"}}
 function renderNews(){if(!me)return;
   socket.emit("getNews",null,r=>{const news=r.news||[];if(news.length>0)latestNewsId=news[0].id;markNewsRead();
     document.getElementById("newsC").innerHTML=`
