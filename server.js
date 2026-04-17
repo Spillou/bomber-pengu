@@ -153,7 +153,7 @@ function findMatch(){if(queue.length<2)return;
     const d=Math.abs((queue[i].mmr||queue[i].lp)-(queue[i+1].mmr||queue[i+1].lp));
     if(d<bd){bd=d;bi=i}
   }
-  if(bi<0)return;const p1=queue.splice(bi+1,1)[0],p2=queue.splice(bi,1)[0];proposeMatch(p1,p2)}
+  if(bi<0)return;const p1=queue.splice(bi+1,1)[0],p2=queue.splice(bi,1)[0];createGame(p1,p2)}
 
 // MATCH PROPOSAL — 10s to accept
 const proposals=new Map(); // proposalId -> {p1,p2,accepted:{p1:bool,p2:bool},timer}
@@ -268,7 +268,9 @@ io.on("connection",sock=>{
     if(u.banned)return cb({error:"Compte banni. Contactez un administrateur."});
     // Migrate old emoji avatars to new ID system
     if(!u.ownedAvatars)u.ownedAvatars=["penguin","polar","seal"];
-    if(u.avatar&&u.avatar.length>3){u.avatar="penguin"}// emoji was set, reset to default ID
+    // Only reset avatar if it's an emoji (not a valid ID like "penguin_cool" etc)
+    const VALID_AV_IDS=["penguin","polar","seal","whale","dolphin","snowman","snowflake","ice","shark","octopus","squid","fish","otter","crab","penguin_cool","fox","wolf","tiger","dragon_baby","ghost_av","unicorn","alien","robot_av","dragon","fire_av","star_av","diamond","crown_av"];
+    if(u.avatar&&!VALID_AV_IDS.includes(u.avatar)){u.avatar="penguin"}
     if(!u.ownedEmotes)u.ownedEmotes=["1","2","3","4"];
     if(!u.selectedEmotes)u.selectedEmotes=["1","2","3","4",null];
     if(u.mmr===undefined)u.mmr=u.lp||0; // Init MMR from current LP for old users
