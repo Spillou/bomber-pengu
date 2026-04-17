@@ -373,10 +373,16 @@ function go(p){PGS.forEach(id=>{const el=document.getElementById("pg-"+id);if(el
   if(p==="menu"){renderMenu();loadGC();loadLB();checkUnreadNews()}if(p==="shop")renderShop();if(p==="profile")renderProf(profileTarget||me);if(p==="lb")loadLB();if(p==="pass")renderPass();if(p==="cosmetics")renderCosmetics();if(p==="news")renderNews();if(p==="admin")renderAdmin();if(p==="quests")renderQuests();if(p==="friends")renderFriends()}
 
 function setTab(r){isReg=!!r;document.getElementById("tabL").style.background=r?"transparent":"#0EA5E9";document.getElementById("tabL").style.color=r?"#7A9BBF":"#FFF";document.getElementById("tabR").style.background=r?"#0EA5E9":"transparent";document.getElementById("tabR").style.color=r?"#FFF":"#7A9BBF";document.getElementById("authBtn").textContent=r?"CRÉER MON COMPTE":"JOUER"}
-function doAuth(){document.getElementById("loginErr").style.display="none";const u=document.getElementById("inU").value.trim(),p=document.getElementById("inP").value.trim();if(!u||!p){document.getElementById("loginErr").style.display="block";document.getElementById("loginErr").textContent="Remplis tous les champs";return}socket.emit(isReg?"register":"login",{username:u,password:p},r=>{if(r.error){document.getElementById("loginErr").style.display="block";document.getElementById("loginErr").textContent=r.error;return}me=r.user;myPass=p;try{localStorage.setItem("bp_sess",JSON.stringify({u,p}))}catch(e){}go("menu");updateAdminVisibility();checkUnreadNews()})}
+function checkRejoin(){socket.emit("rejoinGame",null,r=>{if(r&&r.found){
+    myRole=r.you;opp=r.opp;curAr=r.arena||"glacier";score=r.sc||{p1:0,p2:0};roundNum=r.round||1;
+    grid=r.grid;ent=r.ent;stats={b:1,r:2,s:1,k:false};drawUsed=false;
+    if(ent){visPos={p1:{px:ent.p1.px,py:ent.p1.py},p2:{px:ent.p2.px,py:ent.p2.py}}}
+    go("game");updSc();updSt();buildEmoteBar();startMv();hideOv();
+  }})}
+function doAuth(){document.getElementById("loginErr").style.display="none";const u=document.getElementById("inU").value.trim(),p=document.getElementById("inP").value.trim();if(!u||!p){document.getElementById("loginErr").style.display="block";document.getElementById("loginErr").textContent="Remplis tous les champs";return}socket.emit(isReg?"register":"login",{username:u,password:p},r=>{if(r.error){document.getElementById("loginErr").style.display="block";document.getElementById("loginErr").textContent=r.error;return}me=r.user;myPass=p;try{localStorage.setItem("bp_sess",JSON.stringify({u,p}))}catch(e){}checkRejoin();go("menu");updateAdminVisibility();checkUnreadNews()})}
 function logout(){me=null;try{localStorage.removeItem("bp_sess")}catch(e){}go("login")}
 // Auto-login from localStorage
-function tryAutoLogin(){try{const s=localStorage.getItem("bp_sess");if(!s)return false;const{u,p}=JSON.parse(s);socket.emit("login",{username:u,password:p},r=>{if(r.user){me=r.user;myPass=p;go("menu");updateAdminVisibility();checkUnreadNews()}else{localStorage.removeItem("bp_sess");go("landing")}});return true}catch(e){return false}}
+function tryAutoLogin(){try{const s=localStorage.getItem("bp_sess");if(!s)return false;const{u,p}=JSON.parse(s);socket.emit("login",{username:u,password:p},r=>{if(r.user){me=r.user;myPass=p;checkRejoin();go("menu");updateAdminVisibility();checkUnreadNews()}else{localStorage.removeItem("bp_sess");go("landing")}});return true}catch(e){return false}}
 document.getElementById("inU").onkeydown=e=>{if(e.key==="Enter")doAuth()};document.getElementById("inP").onkeydown=e=>{if(e.key==="Enter")doAuth()};
 
 // MENU
@@ -413,7 +419,7 @@ function renderMenu(){if(!me)return;const rk=gR(me.lp);const lv=getLvl(me.xp);
 }
 
 // CHAT with clickable usernames
-function loadGC(){socket.emit("getChat",null,r=>{if(r.chat)renderGC(r.chat)})}
+function loadGC(){setTimeout(()=>{socket.emit("getChat",null,r=>{if(r.chat)renderGC(r.chat)})},100)}
 function renderGC(c){const el=document.getElementById("gCB");const isAdm=me&&["YMAC","Spillou"].includes(me.username);
   el.innerHTML=c.length===0?'<div style="color:#7A9BBF;text-align:center;padding:24px;font-size:14px">Pas encore de messages</div>':c.map((m,i)=>{
     if(m.deleted)return`<div style="font-size:12px;color:#7A9BBF55;font-style:italic;line-height:1.4;word-break:break-all;overflow-wrap:anywhere">message supprimé</div>`;
@@ -685,7 +691,7 @@ ${reports.length===0?'<div style="color:#7A9BBF;text-align:center;padding:30px;b
 </div>`).join("")}`})}
 
 // Admin button visibility
-function updateAdminVisibility(){socket.emit("admin_check",null,r=>{const b=document.getElementById("adminBtnTop");if(b)b.style.display=r.isAdmin?"inline-block":"none"})}
+function updateAdminVisibility(){setTimeout(()=>{socket.emit("admin_check",null,r=>{const b=document.getElementById("adminBtnTop");if(b)b.style.display=r.isAdmin?"inline-block":"none"})},200)}
 
 // QUESTS
 function renderQuests(){if(!me)return;
@@ -924,7 +930,11 @@ function sfx(type){if(!sfxOn||sfxVol<=0)return;try{const ac=getAC();const g=getM
     const o=ac.createOscillator();o.type="sine";o.frequency.setValueAtTime(200,ac.currentTime);o.frequency.exponentialRampToValueAtTime(80,ac.currentTime+.12);g.gain.setValueAtTime(.1,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.12);o.connect(g);o.start();o.stop(ac.currentTime+.15)}
 }catch(e){}}
 
-function render(){if(!grid||!ent){requestAnimationFrame(render);return}const W=GW*CELL,H=GH*CELL,now=Date.now(),ar=AR[curAr]||AR.glacier;ctx.clearRect(0,0,W,H);
+function render(){const W=GW*CELL,H=GH*CELL,now=Date.now(),ar=AR[curAr]||AR.glacier;
+  ctx.clearRect(0,0,W,H);
+  // Draw floor background always
+  ctx.fillStyle=ar.f1;ctx.fillRect(0,0,W,H);
+  if(!grid||!ent){requestAnimationFrame(render);return}
   // Interpolate visual positions toward server positions
   for(const pid of["p1","p2"]){const e=ent[pid];if(!e)continue;if(!visPos[pid])visPos[pid]={px:e.px,py:e.py};const v=visPos[pid];const dx=e.px-v.px,dy=e.py-v.py;const dist=Math.sqrt(dx*dx+dy*dy);if(dist>CELL*3){v.px=e.px;v.py=e.py}else if(dist>0.5){v.px+=dx*LERP;v.py+=dy*LERP}else{v.px=e.px;v.py=e.py}}
   for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){if(grid[y]?.[x]===0){ctx.fillStyle=(x+y)%2===0?ar.f1:ar.f2;ctx.fillRect(x*CELL,y*CELL,CELL,CELL)}}
