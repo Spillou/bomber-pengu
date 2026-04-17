@@ -506,8 +506,8 @@ let seasonInfo=null;
 function tierXPNeeded(t){return 300+t*40}
 function getSeasonTier(xp){let t=0,rem=xp||0;while(t<25&&rem>=tierXPNeeded(t)){rem-=tierXPNeeded(t);t++}return{tier:t,progress:rem,needed:t<25?tierXPNeeded(t):0}}
 function fmtTimeLeft(endMs){const d=Math.max(0,endMs-Date.now());const days=Math.floor(d/86400000);const hrs=Math.floor((d%86400000)/3600000);return days>0?`${days}j ${hrs}h`:`${hrs}h`}
-function rewardIcon(r){if(r.type==="flocons")return"❄️";if(r.type==="skin")return"🐧";if(r.type==="arena")return"🗺️";if(r.type==="emote")return EM[r.value]?.e||"😀";if(r.type==="avatar")return avatarEmoji(r.value);return"🎁"}
-function rewardLabel(r){if(r.type==="flocons")return`${r.value} Flocons`;if(r.type==="skin"){const s=SKL.find(x=>x.id===r.value);return`Skin ${s?.n||r.value}`}if(r.type==="arena"){const a=ARL.find(x=>x.id===r.value);return`Arène ${a?.n||r.value}`}if(r.type==="emote")return`Émote ${EM[r.value]?.t||r.value}`;if(r.type==="avatar")return`Avatar ${avatarName(r.value)}`;return"?"}
+function rewardIcon(r){if(r.type==="flocons")return"❄️";if(r.type==="skin")return miniPengu(skinCol(r.value),SK[r.value]);if(r.type==="arena"){const ar=AR[r.value];return ar?miniArena(ar):"🗺️"}if(r.type==="emote")return`<span style="font-size:32px">${EM[r.value]?.e||"😀"}</span>`;if(r.type==="avatar")return renderAvatar(r.value,36);return"🎁"}
+function rewardLabel(r){if(r.type==="flocons")return`${r.value} Flocons`;if(r.type==="skin"){const s=SKL.find(x=>x.id===r.value);return`${s?.n||r.value}`}if(r.type==="arena"){const a=ARL.find(x=>x.id===r.value);return`${a?.n||r.value}`}if(r.type==="emote")return`${EM[r.value]?.t||r.value}`;if(r.type==="avatar")return`${avatarName(r.value)}`;return"?"}
 function renderPass(){if(!me)return;
   socket.emit("getSeasonInfo",null,d=>{seasonInfo=d;const sid=d.seasonId;const sd=(me.seasonData||{})[sid]||{xp:0,claimed:[],hasPass:false};const tierInfo=getSeasonTier(sd.xp);const hasPass=sd.hasPass;
   document.getElementById("passC").innerHTML=`
@@ -768,7 +768,36 @@ function doAcceptMatch(){if(!curProposalId)return;socket.emit("acceptMatch",{pro
 function doDeclineMatch(){if(!curProposalId)return;socket.emit("declineMatch",{proposalId:curProposalId});curProposalId=null;if(acceptCountdown)clearInterval(acceptCountdown);go("menu")}
 
 socket.on("matchFound",d=>{if(acceptCountdown)clearInterval(acceptCountdown);curProposalId=null;myRole=d.you;opp=d.opp;curAr=d.me?.arena||"glacier";score={p1:0,p2:0};roundNum=0;stats={b:1,r:2,s:1,k:false};drawUsed=false;go("game");updDrawBtn();buildEmoteBar()});
-socket.on("roundStart",d=>{roundNum=d.round;curAr=d.arena||"glacier";if(d.sc)score=d.sc;showOv(`<div class="f1" style="font-size:18px;color:#7A9BBF;letter-spacing:4px;margin-bottom:8px">ROUND ${d.round}</div><div class="f1" style="font-size:80px;font-weight:700;color:#67D4FF;text-shadow:0 0 40px #0EA5E9">${d.cd}</div>`)});
+socket.on("roundStart",d=>{roundNum=d.round;curAr=d.arena||"glacier";if(d.sc)score=d.sc;
+  if(d.round===1){
+    // VS ANIMATION for first round
+    const mRk=gR(me?.lp);const oRk=gR(opp?.lp);const mLpT=(me?.lp||0)%100;const oLpT=(opp?.lp||0)%100;
+    showOv(`
+<div style="display:flex;align-items:center;justify-content:center;gap:20px;width:100%">
+  <!-- Player 1 -->
+  <div style="text-align:center;animation:fadeUp .5s both">
+    <div style="font-size:56px;margin-bottom:8px">${renderAvatar(me?.avatar,56)}</div>
+    <div class="f1" style="font-size:20px;font-weight:700;color:#67D4FF;margin-bottom:6px">${esc(me?.username||"")}</div>
+    ${rankBadge(mRk)}
+    <div class="f1" style="font-size:12px;color:#7A9BBF;margin-top:4px">${mLpT} LP</div>
+  </div>
+  <!-- VS -->
+  <div style="animation:lvlUp .6s .2s both">
+    <div class="f1" style="font-size:48px;font-weight:700;color:#FBBF24;text-shadow:0 0 30px rgba(251,191,36,.5),0 0 60px rgba(251,191,36,.3)">VS</div>
+  </div>
+  <!-- Player 2 -->
+  <div style="text-align:center;animation:fadeUp .5s .1s both">
+    <div style="font-size:56px;margin-bottom:8px">${renderAvatar(opp?.avatar,56)}</div>
+    <div class="f1" style="font-size:20px;font-weight:700;color:#F87171;margin-bottom:6px">${esc(opp?.username||"")}</div>
+    ${rankBadge(oRk)}
+    <div class="f1" style="font-size:12px;color:#7A9BBF;margin-top:4px">${oLpT} LP</div>
+  </div>
+</div>
+<div class="f1" style="font-size:14px;color:#7A9BBF;margin-top:16px;letter-spacing:3px;animation:fadeUp .5s .4s both">ROUND ${d.round}</div>`);
+    sfx("match");
+  } else {
+    showOv(`<div class="f1" style="font-size:18px;color:#7A9BBF;letter-spacing:4px;margin-bottom:8px">ROUND ${d.round}</div><div class="f1" style="font-size:80px;font-weight:700;color:#67D4FF;text-shadow:0 0 40px #0EA5E9">${d.cd}</div>`);
+  }});
 socket.on("countdown",d=>{sfx("countdown");if(d.v>0)showOv(`<div class="f1" style="font-size:18px;color:#7A9BBF;letter-spacing:4px;margin-bottom:8px">ROUND ${roundNum}</div><div class="f1" style="font-size:80px;font-weight:700;color:#67D4FF;text-shadow:0 0 40px #0EA5E9">${d.v}</div>`);else showOv(`<div class="f1" style="font-size:80px;font-weight:700;color:#34D399;text-shadow:0 0 40px #34D399">GO!</div>`)});
 socket.on("roundBegin",d=>{grid=d.grid;ent=d.ent;bombs=[];pups=[];expl=[];emotes=[];particles=[];stats={b:1,r:2,s:1,k:false};timer=120;sdeath=false;visPos={p1:{px:ent.p1.px,py:ent.p1.py},p2:{px:ent.p2.px,py:ent.p2.py}};hideOv();updSc();updSt();startMv()});
 socket.on("tick",d=>{ent=d.ent;bombs=d.bombs;pups=d.pups;timer=d.timer;if(d.grid)grid=d.grid;
@@ -899,9 +928,14 @@ function render(){if(!grid||!ent){requestAnimationFrame(render);return}const W=G
   for(const p of pups){const cx=p.x*CELL+CELL/2,cy=p.y*CELL+CELL/2,bou=Math.sin(now/260)*3;ctx.save();ctx.translate(cx,cy+bou);ctx.shadowColor="#FCD34D";ctx.shadowBlur=12;ctx.fillStyle="#FBBF24";ctx.beginPath();ctx.arc(0,0,12,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.font="13px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText({range:"🔥",bombs:"💣",speed:"⚡",kick:"👟"}[p.type]||"?",0,1);ctx.restore()}
   for(const b of bombs){const bx=b.px!==undefined?b.px:b.gx*CELL+CELL/2,by=b.py!==undefined?b.py:b.gy*CELL+CELL/2;const tl=Math.max(0,(b.timer-now)/FUSE),pu=1+Math.sin(now/(tl<.3?50:120))*(tl<.3?.2:.08),urg=tl<.25;ctx.save();ctx.translate(bx,by);ctx.scale(pu,pu);ctx.shadowColor=urg?"#FF3333":"#FF9900";ctx.shadowBlur=urg?22:10;ctx.fillStyle=urg?"#AA1111":"#333";ctx.beginPath();ctx.arc(0,2,17,0,Math.PI*2);ctx.fill();ctx.fillStyle=urg?"#CC3333":"#555";ctx.beginPath();ctx.arc(-4,-3,7,0,Math.PI*2);ctx.fill();ctx.fillStyle="rgba(255,255,255,.3)";ctx.beginPath();ctx.arc(-5,-6,3.5,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle="#FFB347";ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(1,-14);ctx.bezierCurveTo(4,-18,7,-20,5,-23);ctx.stroke();const ss=3+Math.sin(now/35)*2.5;ctx.fillStyle="#FFF";ctx.shadowColor="#FFE033";ctx.shadowBlur=14;ctx.beginPath();ctx.arc(5,-23,ss,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.restore()}
   const es=[];if(ent.p1?.alive)es.push({...ent.p1,pid:"p1",vpx:visPos.p1.px,vpy:visPos.p1.py});if(ent.p2?.alive)es.push({...ent.p2,pid:"p2",vpx:visPos.p2.px,vpy:visPos.p2.py});es.sort((a,b)=>(a.vpy||0)-(b.vpy||0));
-  for(const e of es){const isMe=e.pid===myRole;const col=isMe?skinCol(me?.skin):skinCol(opp?.skin);const skinData=SK[isMe?me?.skin:opp?.skin]||SK.classic;const px=e.vpx,py=e.vpy,bob=Math.sin(now/200)*1.5;ctx.save();ctx.translate(px,py+bob);ctx.fillStyle="rgba(0,0,0,.12)";ctx.beginPath();ctx.ellipse(0,20-bob,13,4,0,0,Math.PI*2);ctx.fill();
+  for(const e of es){const isMe=e.pid===myRole;const col=isMe?skinCol(me?.skin):skinCol(opp?.skin);const skinData=SK[isMe?me?.skin:opp?.skin]||SK.classic;const px=e.vpx,py=e.vpy,bob=Math.sin(now/200)*1.5;ctx.save();ctx.translate(px,py+bob);
+    // Legendary glow ring
+    if(skinData.r==="legendary"){const glowR=16+Math.sin(now/300)*3;ctx.save();ctx.globalAlpha=.15+Math.sin(now/400)*.1;ctx.strokeStyle=col;ctx.lineWidth=3;ctx.shadowColor=col;ctx.shadowBlur=20;ctx.beginPath();ctx.arc(0,3,glowR+8,0,Math.PI*2);ctx.stroke();ctx.restore()}
+    // Crystal sparkles
+    if(skinData.crystal&&now%200<50){ctx.save();ctx.globalAlpha=.7;for(let sp=0;sp<3;sp++){const sx=-12+Math.random()*24,sy=-20+Math.random()*30;ctx.fillStyle="#FFF";ctx.beginPath();ctx.arc(sx,sy,1+Math.random(),0,Math.PI*2);ctx.fill()}ctx.restore()}
+    ctx.fillStyle="rgba(0,0,0,.12)";ctx.beginPath();ctx.ellipse(0,20-bob,13,4,0,0,Math.PI*2);ctx.fill();
     // Glow for legendary/epic
-    if(skinData.glow){ctx.shadowColor=col;ctx.shadowBlur=12}
+    if(skinData.glow){ctx.shadowColor=col;ctx.shadowBlur=12+Math.sin(now/200)*4}
     const ww=Math.sin(now/160)*.18;ctx.save();ctx.rotate(-.35+ww);ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(-14,2,5,11,.3,0,Math.PI*2);ctx.fill();ctx.restore();ctx.save();ctx.rotate(.35-ww);ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(14,2,5,11,-.3,0,Math.PI*2);ctx.fill();ctx.restore();
     // Rainbow effect
     if(skinData.rainbow){const h=(now/20)%360;ctx.fillStyle=`hsl(${h},70%,55%)`}else{ctx.fillStyle=col}
@@ -917,6 +951,13 @@ function render(){if(!grid||!ent){requestAnimationFrame(render);return}const W=G
     ctx.restore()}
   for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const px=x*CELL,py=y*CELL;const t=grid[y]?.[x];if(t===1){ctx.fillStyle=ar.w;ctx.fillRect(px,py,CELL,CELL);ctx.fillStyle=ar.wi;ctx.fillRect(px+3,py+3,CELL-6,CELL-6);ctx.strokeStyle="rgba(255,255,255,.06)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(px+8,py+CELL/2);ctx.lineTo(px+CELL-8,py+CELL/2);ctx.moveTo(px+CELL/2,py+8);ctx.lineTo(px+CELL/2,py+CELL-8);ctx.stroke()}else if(t===2){const gr=ctx.createLinearGradient(px,py,px+CELL,py+CELL);gr.addColorStop(0,ar.b1);gr.addColorStop(.5,ar.b2);gr.addColorStop(1,ar.b1);ctx.fillStyle=gr;ctx.fillRect(px,py,CELL,CELL);ctx.fillStyle="rgba(255,255,255,.4)";ctx.fillRect(px+3,py+3,12,8);ctx.strokeStyle=ar.bb;ctx.lineWidth=1.5;ctx.strokeRect(px+.5,py+.5,CELL-1,CELL-1);ctx.fillStyle=ar.sn;ctx.beginPath();ctx.moveTo(px-1,py+4);ctx.bezierCurveTo(px+CELL*.25,py-3,px+CELL*.6,py+2,px+CELL+1,py+4);ctx.lineTo(px+CELL+1,py);ctx.lineTo(px-1,py);ctx.fill()}}
   for(const ex of expl){const age=(now-(ex._ct||ex.time))/EXDUR,a=Math.max(0,1-age);if(a<=0)continue;for(const c of ex.cells){ctx.fillStyle=`rgba(255,160,50,${a*.9})`;ctx.fillRect(c.x*CELL,c.y*CELL,CELL,CELL);ctx.fillStyle=`rgba(255,240,100,${a*.5})`;ctx.fillRect(c.x*CELL+6,c.y*CELL+6,CELL-12,CELL-12)}}
+  // Arena atmospheric effects
+  const arId=curAr||"glacier";
+  if(arId==="volcano"&&now%300<30){ctx.save();ctx.globalAlpha=.3;for(let i=0;i<2;i++){const ex=Math.random()*W,ey=H-Math.random()*40;ctx.fillStyle=Math.random()>.5?"#FF6633":"#FF9944";ctx.beginPath();ctx.arc(ex,ey,1+Math.random()*2,0,Math.PI*2);ctx.fill()}ctx.restore()}
+  if(arId==="crystal"&&now%400<20){ctx.save();ctx.globalAlpha=.4;const sx=Math.random()*W,sy=Math.random()*H;ctx.fillStyle="#E0E0FF";ctx.beginPath();ctx.arc(sx,sy,1,0,Math.PI*2);ctx.fill();ctx.restore()}
+  if(arId==="space"&&now%500<30){ctx.save();ctx.globalAlpha=.2+Math.random()*.3;ctx.fillStyle="#FFF";ctx.beginPath();ctx.arc(Math.random()*W,Math.random()*H,.5+Math.random(),0,Math.PI*2);ctx.fill();ctx.restore()}
+  if(arId==="underwater"&&now%600<40){ctx.save();ctx.globalAlpha=.15;const bx=Math.random()*W,by=H-Math.random()*60;ctx.strokeStyle="#67E8F9";ctx.lineWidth=1;ctx.beginPath();ctx.arc(bx,by,2+Math.random()*3,0,Math.PI*2);ctx.stroke();ctx.restore()}
+  if((arId==="neon_city"||arId==="cyberpunk")&&now%250<20){ctx.save();ctx.globalAlpha=.06;ctx.fillStyle=arId==="neon_city"?"#EC4899":"#FBBF24";ctx.fillRect(0,0,W,H);ctx.restore()}
   particles=particles.filter(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.03;p.life-=p.decay;if(p.life<=0)return false;ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);ctx.fill();ctx.restore();return true});
   for(const pid of["p1","p2"]){const e=ent?.[pid];if(!e||e.alive)continue;const vp=visPos[pid]||e;ctx.save();ctx.translate(vp.px,vp.py);ctx.strokeStyle="#FF4444";ctx.lineWidth=4;ctx.lineCap="round";ctx.shadowColor="#FF4444";ctx.shadowBlur=8;ctx.beginPath();ctx.moveTo(-13,-13);ctx.lineTo(13,13);ctx.moveTo(13,-13);ctx.lineTo(-13,13);ctx.stroke();ctx.shadowBlur=0;ctx.restore()}
   // Emotes
