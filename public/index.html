@@ -33,6 +33,9 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
 @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
 @keyframes snowfall{0%{transform:translateY(-10vh) rotate(0deg)}100%{transform:translateY(105vh) rotate(360deg)}}
 @keyframes menuBtnIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes lvlUp{0%{transform:scale(0) rotate(-20deg);opacity:0}40%{transform:scale(1.3) rotate(5deg);opacity:1}60%{transform:scale(.95) rotate(-2deg)}80%{transform:scale(1.05) rotate(1deg)}100%{transform:scale(1) rotate(0);opacity:1}}
+@keyframes lvlGlow{0%,100%{text-shadow:0 0 20px #A78BFA,0 0 40px #A78BFA}50%{text-shadow:0 0 40px #C4B5FD,0 0 80px #A78BFA,0 0 120px #7C3AED}}
+@keyframes lvlParticle{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-60px) scale(0);opacity:0}}
 .menu-btn{width:100%;padding:16px;font-size:18px;border-radius:14px;font-weight:700;border:none;cursor:pointer;color:#FFF;transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden;font-family:'Fredoka',sans-serif;letter-spacing:.5px}
 .menu-btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 6px 24px rgba(0,0,0,.3)}
 .menu-btn:active{transform:translateY(0) scale(.98)}
@@ -314,7 +317,7 @@ function skinRar(id){return SK[id]?.r||"common"}
 const esc=s=>{const d=document.createElement("div");d.textContent=s;return d.innerHTML};
 const fmtT=s=>`${Math.floor(s/60)}:${(s%60).toString().padStart(2,"0")}`;
 
-let socket=io(),me=null,isReg=false,pingMs=0,onlineCnt=0;
+let socket=io(),me=null,isReg=false,pingMs=0,onlineCnt=0,myPass=null;
 let myRole=null,opp=null,grid=null,ent=null,bombs=[],pups=[],expl=[],emotes=[];
 let score={p1:0,p2:0},roundNum=0,timer=120,sdeath=false,curAr="glacier";
 let stats={b:1,r:2,s:1,k:false},keys={},particles=[],moveInt=null,drawUsed=false;
@@ -336,10 +339,10 @@ function go(p){PGS.forEach(id=>{const el=document.getElementById("pg-"+id);if(el
   if(p==="menu"){renderMenu();loadGC();loadLB();checkUnreadNews()}if(p==="shop")renderShop();if(p==="profile")renderProf(profileTarget||me);if(p==="lb")loadLB();if(p==="pass")renderPass();if(p==="cosmetics")renderCosmetics();if(p==="news")renderNews();if(p==="admin")renderAdmin();if(p==="quests")renderQuests();if(p==="friends")renderFriends()}
 
 function setTab(r){isReg=!!r;document.getElementById("tabL").style.background=r?"transparent":"#0EA5E9";document.getElementById("tabL").style.color=r?"#7A9BBF":"#FFF";document.getElementById("tabR").style.background=r?"#0EA5E9":"transparent";document.getElementById("tabR").style.color=r?"#FFF":"#7A9BBF";document.getElementById("authBtn").textContent=r?"CRÉER MON COMPTE":"JOUER"}
-function doAuth(){document.getElementById("loginErr").style.display="none";const u=document.getElementById("inU").value.trim(),p=document.getElementById("inP").value.trim();if(!u||!p){document.getElementById("loginErr").style.display="block";document.getElementById("loginErr").textContent="Remplis tous les champs";return}socket.emit(isReg?"register":"login",{username:u,password:p},r=>{if(r.error){document.getElementById("loginErr").style.display="block";document.getElementById("loginErr").textContent=r.error;return}me=r.user;try{localStorage.setItem("bp_sess",JSON.stringify({u,p}))}catch(e){}go("menu");updateAdminVisibility();checkUnreadNews()})}
+function doAuth(){document.getElementById("loginErr").style.display="none";const u=document.getElementById("inU").value.trim(),p=document.getElementById("inP").value.trim();if(!u||!p){document.getElementById("loginErr").style.display="block";document.getElementById("loginErr").textContent="Remplis tous les champs";return}socket.emit(isReg?"register":"login",{username:u,password:p},r=>{if(r.error){document.getElementById("loginErr").style.display="block";document.getElementById("loginErr").textContent=r.error;return}me=r.user;myPass=p;try{localStorage.setItem("bp_sess",JSON.stringify({u,p}))}catch(e){}go("menu");updateAdminVisibility();checkUnreadNews()})}
 function logout(){me=null;try{localStorage.removeItem("bp_sess")}catch(e){}go("login")}
 // Auto-login from localStorage
-function tryAutoLogin(){try{const s=localStorage.getItem("bp_sess");if(!s)return false;const{u,p}=JSON.parse(s);socket.emit("login",{username:u,password:p},r=>{if(r.user){me=r.user;go("menu");updateAdminVisibility();checkUnreadNews()}else{localStorage.removeItem("bp_sess");go("landing")}});return true}catch(e){return false}}
+function tryAutoLogin(){try{const s=localStorage.getItem("bp_sess");if(!s)return false;const{u,p}=JSON.parse(s);socket.emit("login",{username:u,password:p},r=>{if(r.user){me=r.user;myPass=p;go("menu");updateAdminVisibility();checkUnreadNews()}else{localStorage.removeItem("bp_sess");go("landing")}});return true}catch(e){return false}}
 document.getElementById("inU").onkeydown=e=>{if(e.key==="Enter")doAuth()};document.getElementById("inP").onkeydown=e=>{if(e.key==="Enter")doAuth()};
 
 // MENU
@@ -403,8 +406,10 @@ function renderProf(u){if(!u)u=me;if(!u)return;const rk=gR(u.lp);const unl=BDG.f
 <h3 class="f1" style="color:#67D4FF;font-size:16px;margin-bottom:8px">📜 HISTORIQUE</h3>
 ${(u.history||[]).slice(0,15).map(h=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#15334D;border-radius:6px;border:1px solid #1E4D7A;font-size:14px;margin-bottom:4px"><span style="color:${h.r==="W"?"#34D399":h.r==="L"?"#F87171":"#FBBF24"};font-weight:700;width:20px;font-size:15px">${h.r}</span><span>vs <b style="color:#67D4FF;cursor:pointer" onclick="viewU('${esc(h.vs)}')">${esc(h.vs)}</b></span><span style="color:#7A9BBF;margin-left:auto">${h.s}</span><span style="color:${(h.lp||0)>=0?"#34D399":"#F87171"};font-weight:700;font-size:15px" class="f1">${(h.lp||0)>=0?"+":""}${h.lp||0}</span></div>`).join("")||'<div style="color:#7A9BBF;text-align:center;padding:16px;font-size:14px">Aucune partie jouée</div>'}
 <button class="btn2" style="width:100%;margin-top:16px;padding:14px;font-size:15px" onclick="go('menu')">← RETOUR</button>
-${u.username!==me?.username?`<button class="btn" style="width:100%;margin-top:8px;padding:12px;font-size:14px;background:linear-gradient(135deg,#EC4899,#F472B6);border-radius:10px" onclick="socket.emit('sendFriendRequest',{target:'${esc(u.username)}'},r=>{if(r.error)alert(r.error);else alert('Demande envoyée !')})">👥 Ajouter en ami</button>`:""}`}
+${u.username!==me?.username?`<button class="btn" style="width:100%;margin-top:8px;padding:12px;font-size:14px;background:linear-gradient(135deg,#EC4899,#F472B6);border-radius:10px" onclick="socket.emit('sendFriendRequest',{target:'${esc(u.username)}'},r=>{if(r.error)alert(r.error);else alert('Demande envoyée !')})">👥 Ajouter en ami</button>
+<button class="btn2" style="width:100%;margin-top:6px;padding:10px;font-size:12px;border-radius:8px;color:#F87171;border-color:#F8717133" onclick="reportPlayer('${esc(u.username)}')">⚠️ Signaler ce joueur</button>`:""}`}
 function togBdg(bid){const fb=[...(me.featuredBadges||[null,null,null])];const i=fb.indexOf(bid);if(i>=0)fb[i]=null;else{const e=fb.indexOf(null);if(e>=0)fb[e]=bid}me.featuredBadges=fb;socket.emit("updateUser",{user:{username:me.username,featuredBadges:fb}},r=>{if(r.user)me=r.user;renderProf(me)})}
+function reportPlayer(username){const reason=prompt(`Pourquoi signales-tu ${username} ?\n(triche, insultes, comportement toxique, etc.)`);if(!reason)return;socket.emit("reportPlayer",{target:username,reason},r=>{if(r.error){alert(r.error);return}alert("Signalement envoyé. Merci !")})}
 
 // SHOP
 function miniPengu(col,sd){
@@ -565,9 +570,10 @@ function renderAdminPanel(){
 <div style="display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid #1E4D7A">
   <button onclick="adminTab='users';renderAdminPanel()" class="f1" style="background:${adminTab==="users"?"#F59E0B":"transparent"};color:${adminTab==="users"?"#0B1E36":"#7A9BBF"};border:none;border-radius:6px 6px 0 0;padding:10px 20px;cursor:pointer;font-weight:700;font-size:13px">👥 Utilisateurs</button>
   <button onclick="adminTab='news';renderAdminPanel()" class="f1" style="background:${adminTab==="news"?"#F59E0B":"transparent"};color:${adminTab==="news"?"#0B1E36":"#7A9BBF"};border:none;border-radius:6px 6px 0 0;padding:10px 20px;cursor:pointer;font-weight:700;font-size:13px">📰 News</button>
+  <button onclick="adminTab='reports';renderAdminPanel()" class="f1" style="background:${adminTab==="reports"?"#F59E0B":"transparent"};color:${adminTab==="reports"?"#0B1E36":"#7A9BBF"};border:none;border-radius:6px 6px 0 0;padding:10px 20px;cursor:pointer;font-weight:700;font-size:13px">⚠️ Signalements</button>
 </div>
 <div id="adminTabC"></div>`;
-  if(adminTab==="users")renderAdminUsers();else renderAdminNews()}
+  if(adminTab==="users")renderAdminUsers();else if(adminTab==="news")renderAdminNews();else if(adminTab==="reports")renderAdminReports()}
 function renderAdminUsers(){
   socket.emit("admin_listUsers",null,r=>{if(r.error){alert(r.error);return}
     const c=document.getElementById("adminTabC");if(!c)return;
@@ -620,6 +626,22 @@ function addLink(){const url=prompt("URL du lien:");if(url)fmt("createLink",url)
 function addImage(){const url=prompt("URL de l'image dans le texte:");if(url)fmt("insertImage",url)}
 function publishNews(){const title=document.getElementById("admNewsTitle").value.trim();const html=document.getElementById("admNewsBody").innerHTML.trim();const image=(document.getElementById("admNewsImage")?.value||"").trim();if(!title||!html){alert("Titre et contenu requis");return}socket.emit("admin_createNews",{title,html,image:image||null},r=>{if(r.error){alert(r.error);return}document.getElementById("admNewsTitle").value="";document.getElementById("admNewsBody").innerHTML="";if(document.getElementById("admNewsImage"))document.getElementById("admNewsImage").value="";renderAdminNews()})}
 function deleteNews(id){if(!confirm("Supprimer cet article ?"))return;socket.emit("admin_deleteNews",{id},r=>{if(r.error){alert(r.error);return}renderAdminNews()})}
+function renderAdminReports(){
+  socket.emit("admin_getReports",null,r=>{if(r.error)return;const reports=r.reports||[];const c=document.getElementById("adminTabC");if(!c)return;
+    c.innerHTML=`
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+  <div style="color:#7A9BBF;font-size:13px" class="f1">${reports.length} signalement(s)</div>
+  ${reports.length>0?`<button class="btn2" style="padding:6px 14px;font-size:12px;color:#EF4444;border-color:#EF444433" onclick="if(confirm('Vider tous les signalements ?'))socket.emit('admin_clearReports',null,r=>{renderAdminReports()})">🗑️ Tout vider</button>`:""}
+</div>
+${reports.length===0?'<div style="color:#7A9BBF;text-align:center;padding:30px;background:#15334D;border-radius:10px">Aucun signalement</div>':
+  reports.map(r=>`<div style="background:#15334D;border:1px solid #EF444433;border-radius:10px;padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center">
+  <div style="flex:1">
+    <div style="font-size:13px"><b style="color:#F87171;cursor:pointer" onclick="viewU('${esc(r.target)}')">${esc(r.target)}</b> <span style="color:#7A9BBF">signalé par</span> <b style="color:#67D4FF;cursor:pointer" onclick="viewU('${esc(r.from)}')">${esc(r.from)}</b></div>
+    <div style="font-size:12px;color:#E8F0F8;margin-top:4px;background:#0B1E36;padding:6px 10px;border-radius:6px">${esc(r.reason||"Aucune raison")}</div>
+    <div style="font-size:10px;color:#7A9BBF;margin-top:4px">${new Date(r.t).toLocaleString("fr-FR")}</div>
+  </div>
+  <button onclick="adminBan('${esc(r.target)}',true)" style="background:#EF4444;color:#FFF;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-size:11px;flex-shrink:0">🚫 Bannir</button>
+</div>`).join("")}`})}
 
 // Admin button visibility
 function updateAdminVisibility(){socket.emit("admin_check",null,r=>{const b=document.getElementById("adminBtnTop");if(b)b.style.display=r.isAdmin?"inline-block":"none"})}
@@ -722,11 +744,24 @@ socket.on("matchEnd",d=>{stopMv();const w=d.result==="win",dr=d.result==="draw";
   // Calculate old XP level for animation
   const oldXP=(me?.xp||0);const newXP=oldXP+(d.xp||0);const oldLv=getLvl(oldXP);const newLv=getLvl(newXP);
   const xpBarId="xpBarEnd_"+Date.now();
+  const leveled=newLv.level>oldLv.level;
   showOv(`<div style="font-size:56px">${w?"🏆":dr?"🤝":"💀"}</div><div class="f1" style="font-size:30px;font-weight:700;color:${col}">${w?"VICTOIRE !":dr?"MATCH NUL":"DÉFAITE"}</div><div style="display:flex;gap:10px;font-size:24px;font-weight:700" class="f1"><span style="color:#34D399">${score.p1}</span><span style="color:#7A9BBF">-</span><span style="color:#F87171">${score.p2}</span></div><div style="display:flex;gap:16px;align-items:center"><div class="f1" style="color:${(d.lpD||0)>=0?"#34D399":"#F87171"};font-size:20px;font-weight:700">${(d.lpD||0)>=0?"+":""}${d.lpD||0} LP</div>${d.xp?`<div class="f1" style="color:#A78BFA;font-size:18px;font-weight:700">+${d.xp} XP</div>`:""}</div>
-${d.xp?`<div style="width:280px;margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:11px;color:#A78BFA;margin-bottom:3px" class="f1"><span>Nv.${newLv.level}</span><span>${newLv.xp}/${newLv.need}</span></div><div style="background:#1E4D7A;border-radius:3px;height:8px;overflow:hidden"><div id="${xpBarId}" style="height:100%;background:linear-gradient(90deg,#A78BFA,#C4B5FD);border-radius:3px;width:${Math.round(oldLv.xp/oldLv.need*100)}%;transition:width 1.5s ease-out"></div></div></div>`:""}<button class="btn" style="margin-top:14px;padding:14px 36px;font-size:16px" onclick="backLobby()">RETOURNER AU LOBBY</button>`);
+${d.xp?`<div style="width:280px;margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:11px;color:#A78BFA;margin-bottom:3px" class="f1"><span>Nv.${newLv.level}</span><span>${newLv.xp}/${newLv.need}</span></div><div style="background:#1E4D7A;border-radius:3px;height:8px;overflow:hidden"><div id="${xpBarId}" style="height:100%;background:linear-gradient(90deg,#A78BFA,#C4B5FD);border-radius:3px;width:${Math.round(oldLv.xp/oldLv.need*100)}%;transition:width 1.5s ease-out"></div></div></div>`:""}
+<div id="lvlUpBox" style="display:none;margin-top:12px;text-align:center;position:relative">
+  <div style="position:relative;display:inline-block">
+    <div style="font-size:14px;color:#A78BFA;margin-bottom:4px;animation:lvlUp .8s .3s both" class="f1">NIVEAU SUPÉRIEUR !</div>
+    <div style="font-size:52px;font-weight:700;color:#C4B5FD;animation:lvlUp .8s .5s both,lvlGlow 1.5s .8s infinite" class="f1">${newLv.level}</div>
+    <div id="lvlParticles" style="position:absolute;inset:0;pointer-events:none;overflow:visible"></div>
+  </div>
+</div>
+<button class="btn" style="margin-top:14px;padding:14px 36px;font-size:16px" onclick="backLobby()">RETOURNER AU LOBBY</button>`);
   // Animate XP bar after short delay
   if(d.xp){setTimeout(()=>{const bar=document.getElementById(xpBarId);if(bar)bar.style.width=Math.round(newLv.xp/newLv.need*100)+"%"},200)}
-  socket.emit("login",{username:me.username,password:me.password},r=>{if(r.user)me=r.user})});
+  // Level up animation
+  if(leveled){setTimeout(()=>{const box=document.getElementById("lvlUpBox");if(box){box.style.display="block";sfx("win");
+    // Spawn particles
+    const pc=document.getElementById("lvlParticles");if(pc){for(let i=0;i<12;i++){const p=document.createElement("div");const angle=Math.random()*Math.PI*2;const dist=30+Math.random()*40;p.style.cssText=`position:absolute;left:50%;top:50%;width:6px;height:6px;border-radius:50%;background:${["#A78BFA","#C4B5FD","#FBBF24","#67D4FF","#34D399"][i%5]};animation:lvlParticle .8s ${.3+i*.05}s both;transform:translate(${Math.cos(angle)*dist}px,${Math.sin(angle)*dist}px)`;pc.appendChild(p)}}}},1800)}
+  socket.emit("login",{username:me.username,password:myPass},r=>{if(r.user)me=r.user})});
 socket.on("gameChatMsg",d=>{const el=document.getElementById("igCB");if(!el)return;const div=document.createElement("div");div.innerHTML=`<span style="color:${d.pid===myRole?"#67D4FF":"#F87171"};font-weight:700">${esc(d.username)}:</span> ${esc(d.message)}`;el.appendChild(div);while(el.children.length>8)el.removeChild(el.firstChild);el.scrollTop=el.scrollHeight});
 // Draw
 socket.on("drawProposal",d=>{document.getElementById("drawFrom").textContent=`${d.from} propose un match nul`;document.getElementById("drawPopup").classList.remove("hidden")});
@@ -735,7 +770,7 @@ function proposeDraw(){if(drawUsed)return;drawUsed=true;socket.emit("proposeDraw
 function respondDraw(accept){document.getElementById("drawPopup").classList.add("hidden");socket.emit("respondDraw",{accept})}
 function updDrawBtn(){const el=document.getElementById("drawBtn");if(!el)return;el.innerHTML=drawUsed?"":`<button class="btn2" style="padding:6px 10px;font-size:10px;white-space:nowrap" onclick="proposeDraw()">🤝 Nul?</button>`}
 
-function backLobby(){stopMv();socket.emit("login",{username:me.username,password:me.password},r=>{if(r.user)me=r.user;go("menu")})}
+function backLobby(){stopMv();socket.emit("login",{username:me.username,password:myPass},r=>{if(r.user)me=r.user;go("menu")})}
 function sendIG(){const i=document.getElementById("igCI");if(i&&i.value.trim())socket.emit("gameChat",{message:i.value.trim()});if(i)i.value=""}
 function showOv(h){const o=document.getElementById("ov");o.innerHTML=h;o.classList.remove("hidden")}
 function hideOv(){document.getElementById("ov").classList.add("hidden")}
