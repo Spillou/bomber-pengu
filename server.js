@@ -1,4 +1,4 @@
-const express=require("express"),http=require("http"),{Server}=require("socket.io"),path=require("path"),fs=require("fs");
+const express=require("express"),http=require("http"),{Server}=require("socket.io"),path=require("path"),fs=require("fs"),bcrypt=require("bcryptjs");
 const app=express(),server=http.createServer(app),io=new Server(server,{cors:{origin:"*"}});
 app.use(express.static(path.join(__dirname,"public")));
 app.get("*",(req,res)=>res.sendFile(path.join(__dirname,"public","index.html")));
@@ -8,10 +8,12 @@ const sv=(f,d)=>fs.writeFileSync(path.join(DATA,f),JSON.stringify(d));
 const gUs=()=>ld("users.json",{}),sUs=u=>sv("users.json",u),gU=n=>gUs()[n.toLowerCase()]||null;
 const pU=u=>{const a=gUs();a[u.username.toLowerCase()]=u;sUs(a)};
 const gLB=()=>ld("lb.json",[]),sLB=lb=>sv("lb.json",lb);
+function safeUser(u){if(!u)return null;const{password,...safe}=u;return safe}
 const uLB=u=>{const lb=gLB();const i=lb.findIndex(e=>e.u===u.username);const e={u:u.username,e:u.lp,w:u.wins,l:u.losses,a:u.avatar||"🐧"};if(i>=0)lb[i]=e;else lb.push(e);lb.sort((a,b)=>b.e-a.e);sLB(lb.slice(0,100))};
 const gCh=()=>ld("chat.json",[]),sCh=c=>sv("chat.json",c);
 const gNews=()=>ld("news.json",[]),sNews=n=>sv("news.json",n);
-const ADMINS=["YMAC","Spillou"]; // admin usernames
+const gReports=()=>ld("reports.json",[]),sReports=r=>sv("reports.json",r);
+const ADMINS=["YMAC","Spillou"];
 const isAdmin=u=>u&&ADMINS.includes(u.username);
 
 const IW=13,IH=11,GW=IW+2,GH=IH+2,CELL=52;
@@ -244,17 +246,23 @@ function endMatchDraw(gid){const g=games.get(gid);if(!g)return;g.phase="mEnd";cl
 
 io.on("connection",sock=>{
   onlineCount++;io.emit("onlineCount",onlineCount);console.log("+",sock.id,onlineCount);
-  sock.on("register",({username,password},cb)=>{if(!username||!password||username.length<3)return cb({error:"Pseudo trop court"});if(gU(username))return cb({error:"Pseudo déjà pris"});const u={username,password,lp:0,mmr:0,wins:0,losses:0,games:0,avatar:"penguin",skin:"classic",arena:"glacier",flocons:500,ownedSkins:["classic"],ownedArenas:["glacier"],ownedAvatars:["penguin","polar","seal"],featuredBadges:[null,null,null],kills:0,bombsPlaced:0,pupsCollected:0,bestStreak:0,currentStreak:0,history:[],xp:0,level:1,ownedEmotes:["1","2","3","4"],selectedEmotes:["1","2","3","4",null],seasonData:{},lastSeason:getSeasonId()};pU(u);uLB(u);sock.data.username=username;cb({user:u})});
-  sock.on("login",({username,password},cb)=>{const u=gU(username);if(!u)return cb({error:"Compte introuvable"});if(u.password!==password)return cb({error:"Mot de passe incorrect"});if(u.banned)return cb({error:"Compte banni. Contactez un administrateur."});
+  sock.on("register",async({username,password},cb)=>{if(!username||!password||username.length<3)return cb({error:"Pseudo trop court"});if(password.length<4)return cb({error:"Mot de passe trop court (4 min)"});if(gU(username))return cb({error:"Pseudo déjà pris"});const hash=await bcrypt.hash(password,10);const u={username,password:hash,lp:0,mmr:0,wins:0,losses:0,games:0,avatar:"penguin",skin:"classic",arena:"glacier",flocons:500,ownedSkins:["classic"],ownedArenas:["glacier"],ownedAvatars:["penguin","polar","seal"],featuredBadges:[null,null,null],kills:0,bombsPlaced:0,pupsCollected:0,bestStreak:0,currentStreak:0,history:[],xp:0,level:1,ownedEmotes:["1","2","3","4"],selectedEmotes:["1","2","3","4",null],seasonData:{},lastSeason:getSeasonId()};pU(u);uLB(u);sock.data.username=username;cb({user:safeUser(u)})});
+  sock.on("login",async({username,password},cb)=>{const u=gU(username);if(!u)return cb({error:"Compte introuvable"});
+    // Bcrypt compare with backward compat for old plaintext passwords
+    let valid=false;
+    if(u.password.startsWith("$2")){valid=await bcrypt.compare(password,u.password)}
+    else{valid=(u.password===password);if(valid){u.password=await bcrypt.hash(password,10);pU(u)}}
+    if(!valid)return cb({error:"Mot de passe incorrect"});
+    if(u.banned)return cb({error:"Compte banni. Contactez un administrateur."});
     // Migrate old emoji avatars to new ID system
     if(!u.ownedAvatars)u.ownedAvatars=["penguin","polar","seal"];
     if(u.avatar&&u.avatar.length>3){u.avatar="penguin"}// emoji was set, reset to default ID
     if(!u.ownedEmotes)u.ownedEmotes=["1","2","3","4"];
     if(!u.selectedEmotes)u.selectedEmotes=["1","2","3","4",null];
     if(u.mmr===undefined)u.mmr=u.lp||0; // Init MMR from current LP for old users
-    checkSeasonReset(u);sock.data.username=username;u.lastSeen=Date.now();pU(u);cb({user:u})});
+    checkSeasonReset(u);sock.data.username=username;u.lastSeen=Date.now();pU(u);cb({user:safeUser(u)})});
   sock.on("getUser",({username},cb)=>{const u=gU(username);if(u){checkSeasonReset(u);const{password,...safe}=u;cb({user:safe})}else cb({user:null})});
-  sock.on("updateUser",({user},cb)=>{const ex=gU(user.username);if(ex){const upd={...ex,...user,password:ex.password};pU(upd);uLB(upd);cb({user:upd})}else cb({error:"Not found"})});
+  sock.on("updateUser",({user},cb)=>{const ex=gU(user.username);if(ex){const upd={...ex,...user,password:ex.password};pU(upd);uLB(upd);cb({user:safeUser(upd)})}else cb({error:"Not found"})});
   sock.on("getLB",(_,cb)=>cb({lb:gLB()}));
   sock.on("getChat",(_,cb)=>cb({chat:gCh()}));
   sock.on("sendChat",({username,message})=>{const u=gU(username);if(!u||!message?.trim())return;const c=gCh();c.push({u:username,m:message.trim(),t:Date.now(),r:rN(u.lp),rc:rC(u.lp),a:u.avatar||"penguin"});if(c.length>30)c.splice(0,c.length-30);sCh(c);io.emit("chatUpdate",{chat:c})});
@@ -304,8 +312,8 @@ io.on("connection",sock=>{
     else if(r.type==="arena"&&!u.ownedArenas.includes(r.value))u.ownedArenas.push(r.value);
     else if(r.type==="emote"&&!(u.ownedEmotes||[]).includes(r.value)){if(!u.ownedEmotes)u.ownedEmotes=["1","2","3","4"];u.ownedEmotes.push(r.value)}
     else if(r.type==="avatar"){if(!u.ownedAvatars)u.ownedAvatars=["penguin","polar","seal"];if(!u.ownedAvatars.includes(r.value))u.ownedAvatars.push(r.value)}
-    u.seasonData[sid].claimed.push(tier);pU(u);cb({user:u})});
-  sock.on("buyBattlePass",(_,cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}const PASS_PRICE=500;if((u.flocons||0)<PASS_PRICE){cb({error:"Pas assez de Flocons"});return}const sid=getSeasonId();if(!u.seasonData)u.seasonData={};if(!u.seasonData[sid])u.seasonData[sid]={xp:0,claimed:[],hasPass:false};if(u.seasonData[sid].hasPass){cb({error:"Passe déjà acheté"});return}u.flocons-=PASS_PRICE;u.seasonData[sid].hasPass=true;pU(u);cb({user:u})});
+    u.seasonData[sid].claimed.push(tier);pU(u);cb({user:safeUser(u)})});
+  sock.on("buyBattlePass",(_,cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}const PASS_PRICE=500;if((u.flocons||0)<PASS_PRICE){cb({error:"Pas assez de Flocons"});return}const sid=getSeasonId();if(!u.seasonData)u.seasonData={};if(!u.seasonData[sid])u.seasonData[sid]={xp:0,claimed:[],hasPass:false};if(u.seasonData[sid].hasPass){cb({error:"Passe déjà acheté"});return}u.flocons-=PASS_PRICE;u.seasonData[sid].hasPass=true;pU(u);cb({user:safeUser(u)})});
   sock.on("getQuests",(_,cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}
     const q=getUserQuests(u);const defs=getDailyQuests();const endMs=getShopEndMs();
     cb({quests:defs.map(d=>({...d,progress:q.progress[d.stat]||0,claimed:q.claimed.includes(d.id)})),endMs})});
@@ -313,7 +321,7 @@ io.on("connection",sock=>{
     const q=getUserQuests(u);const defs=getDailyQuests();const d=defs.find(x=>x.id===questId);
     if(!d){cb({error:"Quête introuvable"});return}if(q.claimed.includes(questId)){cb({error:"Déjà réclamé"});return}
     if((q.progress[d.stat]||0)<d.goal){cb({error:"Quête pas encore terminée"});return}
-    q.claimed.push(questId);u.flocons=(u.flocons||0)+d.reward;pU(u);cb({user:u})});
+    q.claimed.push(questId);u.flocons=(u.flocons||0)+d.reward;pU(u);cb({user:safeUser(u)})});
   // FRIENDS SYSTEM
   sock.on("getFriends",(_,cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}
     const friends=(u.friends||[]).map(f=>{const fu=gU(f);return fu?{username:fu.username,avatar:fu.avatar,lp:fu.lp,level:fu.level||1,online:Array.from(io.sockets.sockets.values()).some(s=>s.data?.username===f)}:null}).filter(Boolean);
@@ -362,6 +370,17 @@ io.on("connection",sock=>{
   sock.on("admin_giveFlocons",({username,amount},cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}const target=gU(username);if(!target){cb({error:"Utilisateur introuvable"});return}const amt=parseInt(amount)||0;target.flocons=Math.max(0,(target.flocons||0)+amt);pU(target);cb({ok:true,flocons:target.flocons})});
   sock.on("admin_createNews",({title,html,image},cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}if(!title||!html){cb({error:"Titre et contenu requis"});return}const news=gNews();const art={id:Date.now(),title:String(title).slice(0,200),html:String(html).slice(0,20000),image:image?String(image).slice(0,2000):null,author:u.username,createdAt:Date.now()};news.unshift(art);if(news.length>50)news.length=50;sNews(news);io.emit("newsPublished",{id:art.id});cb({ok:true,article:art})});
   sock.on("admin_deleteNews",({id},cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}let news=gNews();news=news.filter(n=>n.id!==id);sNews(news);cb({ok:true})});
+  // REPORTS
+  sock.on("reportPlayer",({target,reason},cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}
+    if(target===u.username){cb({error:"Tu ne peux pas te signaler toi-même"});return}
+    const reports=gReports();
+    // Prevent spam: max 1 report per user per target per day
+    const today=getDailyShopId();const dup=reports.find(r=>r.from===u.username&&r.target===target&&r.day===today);
+    if(dup){cb({error:"Tu as déjà signalé ce joueur aujourd'hui"});return}
+    reports.unshift({from:u.username,target,reason:String(reason||"").slice(0,200),day:today,t:Date.now()});
+    if(reports.length>200)reports.length=200;sReports(reports);cb({ok:true})});
+  sock.on("admin_getReports",(_,cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}cb({reports:gReports()})});
+  sock.on("admin_clearReports",(_,cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}sReports([]);cb({ok:true})});
   sock.on("disconnect",()=>{onlineCount--;io.emit("onlineCount",onlineCount);console.log("-",sock.id,onlineCount);pInput.delete(sock.id);const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1);const gid=pGame.get(sock.id);if(gid){const g=games.get(gid);if(g&&g.phase!=="mEnd"){const w=g.pl.p1.sock.id===sock.id?"p2":"p1";g.sc[w]=3;endMatch(gid)}}});
 });
 
