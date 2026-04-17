@@ -153,7 +153,7 @@ function findMatch(){if(queue.length<2)return;
     const d=Math.abs((queue[i].mmr||queue[i].lp)-(queue[i+1].mmr||queue[i+1].lp));
     if(d<bd){bd=d;bi=i}
   }
-  if(bi<0)return;const p1=queue.splice(bi+1,1)[0],p2=queue.splice(bi,1)[0];createGame(p1,p2)}
+  if(bi<0)return;const p1=queue.splice(bi+1,1)[0],p2=queue.splice(bi,1)[0];proposeMatch(p1,p2)}
 
 // MATCH PROPOSAL — 10s to accept
 const proposals=new Map(); // proposalId -> {p1,p2,accepted:{p1:bool,p2:bool},timer}
@@ -395,7 +395,36 @@ io.on("connection",sock=>{
     if(reports.length>200)reports.length=200;sReports(reports);cb({ok:true})});
   sock.on("admin_getReports",(_,cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}cb({reports:gReports()})});
   sock.on("admin_clearReports",(_,cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}sReports([]);cb({ok:true})});
-  sock.on("disconnect",()=>{onlineCount--;io.emit("onlineCount",onlineCount);console.log("-",sock.id,onlineCount);pInput.delete(sock.id);const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1);const gid=pGame.get(sock.id);if(gid){const g=games.get(gid);if(g&&g.phase!=="mEnd"){const w=g.pl.p1.sock.id===sock.id?"p2":"p1";g.sc[w]=3;endMatch(gid)}}});
+  sock.on("disconnect",()=>{onlineCount--;io.emit("onlineCount",onlineCount);console.log("-",sock.id,onlineCount);pInput.delete(sock.id);const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1);
+    // Check for active proposal
+    for(const[pid,pr] of proposals){if(pr.p1.socket.id===sock.id||pr.p2.socket.id===sock.id){clearTimeout(pr.timer);proposals.delete(pid);const other=pr.p1.socket.id===sock.id?pr.p2:pr.p1;queue.push(other);other.socket.emit("matchDeclined",{reason:"Adversaire déconnecté"});findMatch()}}
+    const gid=pGame.get(sock.id);if(gid){const g=games.get(gid);if(g&&g.phase!=="mEnd"){
+      // Grace period: 15s to reconnect
+      const who=g.pl.p1.sock.id===sock.id?"p1":"p2";
+      g.pl[who].disconnected=true;g.pl[who].dcTimer=setTimeout(()=>{
+        // Timeout — opponent wins
+        const w=who==="p1"?"p2":"p1";g.sc[w]=3;endMatch(gid);
+      },15000);
+      // Notify opponent
+      const oRole=who==="p1"?"p2":"p1";g.pl[oRole].sock.emit("oppDisconnected",{grace:15});
+    }}});
+  // Reconnect to game
+  sock.on("rejoinGame",(_,cb)=>{const username=sock.data?.username;if(!username){cb({error:"Non connecté"});return}
+    // Find active game by username
+    for(const[gid,g] of games){
+      if(g.phase==="mEnd")continue;
+      const role=g.pl.p1.name===username?"p1":g.pl.p2.name===username?"p2":null;
+      if(!role)continue;
+      // Found! Reconnect socket
+      const oldSockId=g.pl[role].sock.id;pGame.delete(oldSockId);
+      g.pl[role].sock=sock;g.pl[role].disconnected=false;
+      if(g.pl[role].dcTimer){clearTimeout(g.pl[role].dcTimer);g.pl[role].dcTimer=null}
+      pGame.set(sock.id,gid);pInput.set(sock.id,{dx:0,dy:0});
+      const oRole=role==="p1"?"p2":"p1";const ou=gU(g.pl[oRole].name);
+      g.pl[oRole].sock.emit("oppReconnected");
+      cb({found:true,gid,you:role,opp:{username:g.pl[oRole].name,lp:ou?.lp||0,skin:ou?.skin,arena:ou?.arena,avatar:ou?.avatar||"penguin"},me:{username,lp:gU(username)?.lp||0,skin:gU(username)?.skin,arena:gU(username)?.arena,avatar:gU(username)?.avatar||"penguin"},grid:g.grid,ent:g.ent?sE(g.ent):null,sc:g.sc,round:g.rn,arena:g.curArena,phase:g.phase});
+      return}
+    cb({found:false})});
 });
 
 const PORT=process.env.PORT||3000;
