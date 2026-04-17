@@ -277,7 +277,7 @@ io.on("connection",sock=>{
   sock.on("updateUser",({user},cb)=>{const ex=gU(user.username);if(ex){const upd={...ex,...user,password:ex.password};pU(upd);uLB(upd);cb({user:safeUser(upd)})}else cb({error:"Not found"})});
   sock.on("getLB",(_,cb)=>cb({lb:gLB()}));
   sock.on("getChat",(_,cb)=>cb({chat:gCh()}));
-  sock.on("sendChat",({username,message})=>{const u=gU(username);if(!u||!message?.trim())return;const c=gCh();c.push({u:username,m:message.trim(),t:Date.now(),r:rN(u.lp),rc:rC(u.lp),a:u.avatar||"penguin"});if(c.length>30)c.splice(0,c.length-30);sCh(c);io.emit("chatUpdate",{chat:c})});
+  sock.on("sendChat",({username,message})=>{const u=gU(username);if(!u||!message?.trim())return;const c=gCh();const ti=Math.min(5,u.lp>=2000?5:Math.floor((u.lp||0)/400));c.push({u:username,m:message.trim(),t:Date.now(),r:rN(u.lp),rc:rC(u.lp),ri:ti,a:u.avatar||"penguin"});if(c.length>30)c.splice(0,c.length-30);sCh(c);io.emit("chatUpdate",{chat:c})});
   sock.on("clearChat",()=>{const u=gU(sock.data?.username);if(!isAdmin(u))return;sCh([]);io.emit("chatUpdate",{chat:[]})});
   sock.on("deleteChat",({index})=>{const u=gU(sock.data?.username);if(!isAdmin(u))return;const c=gCh();if(index>=0&&index<c.length){c[index]={deleted:true,t:c[index].t};sCh(c);io.emit("chatUpdate",{chat:c})}});
   sock.on("gameChat",({message})=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g)return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";bc(g,"gameChatMsg",{username:g.pl[pid].name,message:message?.trim(),pid})});
