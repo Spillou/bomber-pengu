@@ -26,32 +26,36 @@ const TC=["#CD7F32","#C0C0C0","#FFD700","#00CED1","#B9F2FF","#FF6B6B"];
 // SEASON SYSTEM
 function getSeasonId(){const d=new Date();return`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}`}
 function getSeasonEnd(){const d=new Date();const end=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,1));return end.getTime()}
-// Tier XP requirement: tier N needs (500 + N*50) XP to complete. Total XP for tier 50 = sum
-function tierXP(t){return 500+t*50}
-function getTier(seasonXP){let t=0,remaining=seasonXP;while(t<50&&remaining>=tierXP(t)){remaining-=tierXP(t);t++}return{tier:t,progress:remaining,needed:t<50?tierXP(t):0}}
+// Tier XP requirement: tier N needs (300 + N*40) XP to complete. 25 tiers total
+function tierXP(t){return 300+t*40}
+function getTier(seasonXP){let t=0,remaining=seasonXP;while(t<25&&remaining>=tierXP(t)){remaining-=tierXP(t);t++}return{tier:t,progress:remaining,needed:t<25?tierXP(t):0}}
 // Rewards per tier: [tier, type, value, price (0=free)]
 const SEASON_REWARDS=[
   {tier:1,type:"flocons",value:50,free:true},
-  {tier:3,type:"emote",value:"10",free:false}, // 💣 BOOM
+  {tier:2,type:"emote",value:"10",free:false},
+  {tier:3,type:"flocons",value:80,free:true},
+  {tier:4,type:"skin",value:"captain",free:false},
   {tier:5,type:"flocons",value:100,free:true},
-  {tier:8,type:"skin",value:"captain",free:false},
-  {tier:10,type:"flocons",value:150,free:true},
-  {tier:12,type:"avatar",value:"penguin_cool",free:false},
-  {tier:15,type:"flocons",value:200,free:true},
-  {tier:18,type:"arena",value:"underwater",free:false},
-  {tier:20,type:"skin",value:"samurai",free:true},
-  {tier:23,type:"emote",value:"13",free:false}, // ⚡ ZAP
-  {tier:25,type:"flocons",value:300,free:true},
-  {tier:28,type:"avatar",value:"dragon_baby",free:false},
-  {tier:30,type:"flocons",value:400,free:true},
-  {tier:33,type:"arena",value:"cyberpunk",free:false},
-  {tier:35,type:"skin",value:"ninja",free:true},
-  {tier:38,type:"emote",value:"20",free:false}, // 🐉 DRAGON
-  {tier:40,type:"flocons",value:700,free:true},
-  {tier:43,type:"avatar",value:"dragon",free:false},
-  {tier:45,type:"skin",value:"cyber",free:true},
-  {tier:48,type:"arena",value:"neon_city",free:false},
-  {tier:50,type:"skin",value:"rainbow",free:true},
+  {tier:6,type:"avatar",value:"penguin_cool",free:false},
+  {tier:7,type:"flocons",value:120,free:true},
+  {tier:8,type:"arena",value:"underwater",free:false},
+  {tier:9,type:"skin",value:"military",free:true},
+  {tier:10,type:"emote",value:"13",free:false},
+  {tier:11,type:"flocons",value:150,free:true},
+  {tier:12,type:"avatar",value:"dragon_baby",free:false},
+  {tier:13,type:"flocons",value:200,free:true},
+  {tier:14,type:"arena",value:"cyberpunk",free:false},
+  {tier:15,type:"skin",value:"samurai",free:true},
+  {tier:16,type:"emote",value:"20",free:false},
+  {tier:17,type:"flocons",value:250,free:true},
+  {tier:18,type:"skin",value:"ninja",free:false},
+  {tier:19,type:"flocons",value:300,free:true},
+  {tier:20,type:"avatar",value:"dragon",free:false},
+  {tier:21,type:"arena",value:"neon_city",free:true},
+  {tier:22,type:"skin",value:"cyber",free:false},
+  {tier:23,type:"flocons",value:500,free:true},
+  {tier:24,type:"emote",value:"19",free:false},
+  {tier:25,type:"skin",value:"rainbow",free:true},
 ];
 function rN(lp){if(lp>=2000)return"Maître";const t=Math.min(4,Math.floor(lp/400));return`${TN[t]} ${4-Math.floor((lp-t*400)/100)}`}
 function rC(lp){if(lp>=2000)return TC[5];return TC[Math.min(4,Math.floor(lp/400))]}
@@ -59,14 +63,14 @@ function getTierIdx(lp){return Math.min(5,Math.floor((lp||0)/400))} // 0=Bronze,
 
 // --- DAILY QUESTS ---
 const QUEST_DEFS=[
-  {id:"win1",d:"Gagne 1 match",goal:1,stat:"wins",reward:50},
-  {id:"win3",d:"Gagne 3 matchs",goal:3,stat:"wins",reward:150},
-  {id:"play3",d:"Joue 3 parties",goal:3,stat:"games",reward:80},
-  {id:"play5",d:"Joue 5 parties",goal:5,stat:"games",reward:120},
-  {id:"kill3",d:"Fais 3 kills",goal:3,stat:"kills",reward:100},
-  {id:"kill5",d:"Fais 5 kills",goal:5,stat:"kills",reward:180},
-  {id:"pup5",d:"Ramasse 5 power-ups",goal:5,stat:"pups",reward:60},
-  {id:"bomb10",d:"Pose 10 bombes",goal:10,stat:"bombs",reward:70},
+  {id:"win1",d:"Gagne 1 match",goal:1,stat:"wins",reward:80,type:"xp"},
+  {id:"win3",d:"Gagne 3 matchs",goal:3,stat:"wins",reward:250,type:"xp"},
+  {id:"play3",d:"Joue 3 parties",goal:3,stat:"games",reward:120,type:"xp"},
+  {id:"play5",d:"Joue 5 parties",goal:5,stat:"games",reward:200,type:"xp"},
+  {id:"kill3",d:"Fais 3 kills",goal:3,stat:"kills",reward:150,type:"xp"},
+  {id:"kill5",d:"Fais 5 kills",goal:5,stat:"kills",reward:300,type:"xp"},
+  {id:"pup5",d:"Ramasse 5 power-ups",goal:5,stat:"pups",reward:100,type:"xp"},
+  {id:"bomb10",d:"Pose 10 bombes",goal:10,stat:"bombs",reward:120,type:"xp"},
 ];
 function getDailyQuestSeed(){const d=new Date();return`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}-${String(d.getUTCDate()).padStart(2,"0")}`}
 function getDailyQuests(){const seed=getDailyQuestSeed();const s=seed.split("-").reduce((a,b)=>a+parseInt(b),0);
@@ -116,8 +120,16 @@ function calcLP(myLP,myMMR,won){
 // Daily shop rotation — uses current UTC day as seed
 function getDailyShopId(){const d=new Date();return`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}-${String(d.getUTCDate()).padStart(2,"0")}`}
 function getShopEndMs(){const d=new Date();const end=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()+1));return end.getTime()}
-// Deterministic rotation: pick N items from pool using day-based seed
+// Deterministic rotation: pick N items from pool, excluding yesterday's picks
 function shopRotation(pool,count,seed){const s=seed.split("-").reduce((a,b)=>a+parseInt(b),0);const shuffled=[...pool].map((v,i)=>({v,k:(s+i*997)%pool.length}));shuffled.sort((a,b)=>a.k-b.k);return shuffled.slice(0,count).map(x=>x.v)}
+function shopRotationNoRepeat(pool,count,todaySeed,yesterdaySeed){
+  const today=shopRotation(pool,count,todaySeed);
+  const yesterday=shopRotation(pool,count,yesterdaySeed);
+  // If any of today's items were in yesterday's rotation, swap them out
+  const ySet=new Set(yesterday);const remaining=pool.filter(x=>!today.includes(x)&&!ySet.has(x));
+  const result=[];for(const item of today){if(ySet.has(item)&&remaining.length>0){result.push(remaining.shift())}else{result.push(item)}}
+  return result}
+function getYesterdayShopId(){const d=new Date();d.setUTCDate(d.getUTCDate()-1);return`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}-${String(d.getUTCDate()).padStart(2,"0")}`}
 
 function mkG(){const g=Array.from({length:GH},()=>Array(GW).fill(T.E));for(let y=0;y<GH;y++)for(let x=0;x<GW;x++)if(x===0||x===GW-1||y===0||y===GH-1)g[y][x]=T.W;for(let iy=0;iy<IH;iy++)for(let ix=0;ix<IW;ix++)if(ix%2===1&&iy%2===1)g[iy+1][ix+1]=T.W;const sf=new Set();[[1,1],[2,1],[1,2],[3,1],[1,3]].forEach(([x,y])=>sf.add(`${x},${y}`));const ax=GW-2,ay=GH-2;[[ax,ay],[ax-1,ay],[ax,ay-1],[ax-2,ay],[ax,ay-2]].forEach(([x,y])=>sf.add(`${x},${y}`));for(let y=1;y<GH-1;y++)for(let x=1;x<GW-1;x++)if(g[y][x]===T.E&&!sf.has(`${x},${y}`)&&Math.random()<.6)g[y][x]=T.B;return g}
 function genSp(){const o=[],v=new Set();let t=1,b=GH-2,l=1,r=GW-2;while(t<=b&&l<=r){for(let x=l;x<=r;x++){const k=`${x},${t}`;if(!v.has(k)){v.add(k);o.push({x,y:t})}}t++;for(let y=t;y<=b;y++){const k=`${r},${y}`;if(!v.has(k)){v.add(k);o.push({x:r,y})}}r--;for(let x=r;x>=l;x--){const k=`${x},${b}`;if(!v.has(k)){v.add(k);o.push({x,y:b})}}b--;for(let y=b;y>=t;y--){const k=`${l},${y}`;if(!v.has(k)){v.add(k);o.push({x:l,y})}}l++}return o}
@@ -295,14 +307,14 @@ io.on("connection",sock=>{
     const ARENA_POOL=["volcano","forest","crystal","desert","space","underwater","candy","haunted","neon_city","cyberpunk","temple","ruins"];
     const EMOTE_POOL=["6","7","8","9","10","11","12","13","14","15","16","17","18","19","20"];
     const AVATAR_POOL=["whale","dolphin","snowman","snowflake","ice","shark","octopus","squid","fish","otter","crab","penguin_cool","fox","wolf","tiger","dragon_baby","ghost_av","unicorn","alien","robot_av","dragon","fire_av","star_av","diamond","crown_av"];
-    const sid=getDailyShopId();
+    const sid=getDailyShopId();const ysid=getYesterdayShopId();
     cb({
       endMs:getShopEndMs(),
       shopId:sid,
-      skins:shopRotation(SKIN_POOL,4,sid),
-      arenas:shopRotation(ARENA_POOL,3,sid+"a"),
-      emotes:shopRotation(EMOTE_POOL,5,sid+"e"),
-      avatars:shopRotation(AVATAR_POOL,4,sid+"v")
+      skins:shopRotationNoRepeat(SKIN_POOL,4,sid,ysid),
+      arenas:shopRotationNoRepeat(ARENA_POOL,3,sid+"a",ysid+"a"),
+      emotes:shopRotationNoRepeat(EMOTE_POOL,5,sid+"e",ysid+"e"),
+      avatars:shopRotationNoRepeat(AVATAR_POOL,4,sid+"v",ysid+"v")
     });
   });
   sock.on("claimReward",({tier},cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}const sid=getSeasonId();if(!u.seasonData)u.seasonData={};if(!u.seasonData[sid])u.seasonData[sid]={xp:0,claimed:[],hasPass:false};const info=getTier(u.seasonData[sid].xp);const r=SEASON_REWARDS.find(x=>x.tier===tier);if(!r){cb({error:"Palier introuvable"});return}if(info.tier<tier){cb({error:"Palier pas encore atteint"});return}if(u.seasonData[sid].claimed.includes(tier)){cb({error:"Déjà réclamé"});return}if(!r.free&&!u.seasonData[sid].hasPass){cb({error:"Passe de combat requis"});return}
@@ -321,7 +333,7 @@ io.on("connection",sock=>{
     const q=getUserQuests(u);const defs=getDailyQuests();const d=defs.find(x=>x.id===questId);
     if(!d){cb({error:"Quête introuvable"});return}if(q.claimed.includes(questId)){cb({error:"Déjà réclamé"});return}
     if((q.progress[d.stat]||0)<d.goal){cb({error:"Quête pas encore terminée"});return}
-    q.claimed.push(questId);u.flocons=(u.flocons||0)+d.reward;pU(u);cb({user:safeUser(u)})});
+    q.claimed.push(questId);applyXP(u,d.reward);pU(u);cb({user:safeUser(u)})});
   // FRIENDS SYSTEM
   sock.on("getFriends",(_,cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}
     const friends=(u.friends||[]).map(f=>{const fu=gU(f);return fu?{username:fu.username,avatar:fu.avatar,lp:fu.lp,level:fu.level||1,online:Array.from(io.sockets.sockets.values()).some(s=>s.data?.username===f)}:null}).filter(Boolean);
