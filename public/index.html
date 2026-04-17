@@ -798,7 +798,10 @@ socket.on("roundStart",d=>{roundNum=d.round;curAr=d.arena||"glacier";if(d.sc)sco
   } else {
     showOv(`<div class="f1" style="font-size:18px;color:#7A9BBF;letter-spacing:4px;margin-bottom:8px">ROUND ${d.round}</div><div class="f1" style="font-size:80px;font-weight:700;color:#67D4FF;text-shadow:0 0 40px #0EA5E9">${d.cd}</div>`);
   }});
-socket.on("countdown",d=>{sfx("countdown");if(d.v>0)showOv(`<div class="f1" style="font-size:18px;color:#7A9BBF;letter-spacing:4px;margin-bottom:8px">ROUND ${roundNum}</div><div class="f1" style="font-size:80px;font-weight:700;color:#67D4FF;text-shadow:0 0 40px #0EA5E9">${d.v}</div>`);else showOv(`<div class="f1" style="font-size:80px;font-weight:700;color:#34D399;text-shadow:0 0 40px #34D399">GO!</div>`)});
+socket.on("countdown",d=>{sfx("countdown");
+  // For round 1, keep VS visible for first ticks (v=4,3 stay VS), then show countdown for v=2,1,0
+  if(roundNum===1&&d.v>2)return; // VS still showing
+  if(d.v>0)showOv(`<div class="f1" style="font-size:18px;color:#7A9BBF;letter-spacing:4px;margin-bottom:8px">ROUND ${roundNum}</div><div class="f1" style="font-size:80px;font-weight:700;color:#67D4FF;text-shadow:0 0 40px #0EA5E9">${d.v}</div>`);else showOv(`<div class="f1" style="font-size:80px;font-weight:700;color:#34D399;text-shadow:0 0 40px #34D399">GO!</div>`)});
 socket.on("roundBegin",d=>{grid=d.grid;ent=d.ent;bombs=[];pups=[];expl=[];emotes=[];particles=[];stats={b:1,r:2,s:1,k:false};timer=120;sdeath=false;visPos={p1:{px:ent.p1.px,py:ent.p1.py},p2:{px:ent.p2.px,py:ent.p2.py}};hideOv();updSc();updSt();startMv()});
 socket.on("tick",d=>{ent=d.ent;bombs=d.bombs;pups=d.pups;timer=d.timer;if(d.grid)grid=d.grid;
   // Re-stamp explosions with client time for rendering consistency
