@@ -184,8 +184,8 @@ function createGame(p1,p2){const gid=`g_${Date.now()}_${Math.random().toString(3
 
 function bc(g,ev,d){g.pl.p1.sock.emit(ev,d);g.pl.p2.sock.emit(ev,d)}
 
-function startCD(gid){const g=games.get(gid);if(!g)return;g.rn++;g.phase="cd";g.cd=3;g.curArena=g.rn%2===1?g.pl.p1.arena:g.pl.p2.arena;g.drawProposed=null;
-  bc(g,"roundStart",{round:g.rn,cd:3,arena:g.curArena,sc:g.sc});
+function startCD(gid){const g=games.get(gid);if(!g)return;g.rn++;g.phase="cd";g.cd=g.rn===1?5:3;g.curArena=g.rn%2===1?g.pl.p1.arena:g.pl.p2.arena;g.drawProposed=null;
+  bc(g,"roundStart",{round:g.rn,cd:g.cd,arena:g.curArena,sc:g.sc});
   g.cdInt=setInterval(()=>{g.cd--;bc(g,"countdown",{v:g.cd});if(g.cd<=0){clearInterval(g.cdInt);setTimeout(()=>startRound(gid),500)}},1000)}
 
 function startRound(gid){const g=games.get(gid);if(!g)return;g.grid=mkG();g.bombs=[];g.expl=[];g.pups=[];g.kicked=[];g.emotes=[];g.sd=false;g.sdO=genSp();g.sdI=0;g.sdL=0;g.rStart=Date.now();g.phase="play";
@@ -257,7 +257,7 @@ function endMatchDraw(gid){const g=games.get(gid);if(!g)return;g.phase="mEnd";cl
   setTimeout(()=>{pGame.delete(g.pl.p1.sock.id);pGame.delete(g.pl.p2.sock.id);pInput.delete(g.pl.p1.sock.id);pInput.delete(g.pl.p2.sock.id);games.delete(gid)},5000)}
 
 io.on("connection",sock=>{
-  onlineCount++;io.emit("onlineCount",onlineCount);console.log("+",sock.id,onlineCount);
+  sock.data={};onlineCount++;io.emit("onlineCount",onlineCount);console.log("+",sock.id,onlineCount);
   sock.on("register",async({username,password},cb)=>{if(!username||!password||username.length<3)return cb({error:"Pseudo trop court"});if(password.length<4)return cb({error:"Mot de passe trop court (4 min)"});if(gU(username))return cb({error:"Pseudo déjà pris"});const hash=await bcrypt.hash(password,10);const u={username,password:hash,lp:0,mmr:0,wins:0,losses:0,games:0,avatar:"penguin",skin:"classic",arena:"glacier",flocons:500,ownedSkins:["classic"],ownedArenas:["glacier"],ownedAvatars:["penguin","polar","seal"],featuredBadges:[null,null,null],kills:0,bombsPlaced:0,pupsCollected:0,bestStreak:0,currentStreak:0,history:[],xp:0,level:1,ownedEmotes:["1","2","3","4"],selectedEmotes:["1","2","3","4",null],seasonData:{},lastSeason:getSeasonId()};pU(u);uLB(u);sock.data.username=username;cb({user:safeUser(u)})});
   sock.on("login",async({username,password},cb)=>{const u=gU(username);if(!u)return cb({error:"Compte introuvable"});
     // Bcrypt compare with backward compat for old plaintext passwords
