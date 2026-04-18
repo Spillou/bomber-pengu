@@ -971,7 +971,7 @@ function render(){try{const W=GW*CELL,H=GH*CELL,now=Date.now(),ar=AR[curAr]||AR.
   if(arId==="crystal"&&now%400<20){ctx.save();ctx.globalAlpha=.4;const sx=Math.random()*W,sy=Math.random()*H;ctx.fillStyle="#E0E0FF";ctx.beginPath();ctx.arc(sx,sy,1,0,Math.PI*2);ctx.fill();ctx.restore()}
   if(arId==="space"&&now%500<30){ctx.save();ctx.globalAlpha=.2+Math.random()*.3;ctx.fillStyle="#FFF";ctx.beginPath();ctx.arc(Math.random()*W,Math.random()*H,.5+Math.random(),0,Math.PI*2);ctx.fill();ctx.restore()}
   if(arId==="underwater"&&now%600<40){ctx.save();ctx.globalAlpha=.15;const bx=Math.random()*W,by=H-Math.random()*60;ctx.strokeStyle="#67E8F9";ctx.lineWidth=1;ctx.beginPath();ctx.arc(bx,by,2+Math.random()*3,0,Math.PI*2);ctx.stroke();ctx.restore()}
-  if((arId==="neon_city"||arId==="cyberpunk")&&now%250<20){ctx.save();ctx.globalAlpha=.06;ctx.fillStyle=arId==="neon_city"?"#EC4899":"#FBBF24";ctx.fillRect(0,0,W,H);ctx.restore()}
+  if((arId==="neon_city"||arId==="cyberpunk")&&now%2000<30){ctx.save();ctx.globalAlpha=.02;ctx.fillStyle=arId==="neon_city"?"#EC4899":"#FBBF24";ctx.fillRect(0,0,W,H);ctx.restore()}
   particles=particles.filter(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.03;p.life-=p.decay;if(p.life<=0)return false;ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);ctx.fill();ctx.restore();return true});
   for(const pid of["p1","p2"]){const e=ent?.[pid];if(!e||e.alive)continue;const vp=visPos[pid]||e;ctx.save();ctx.translate(vp.px,vp.py);ctx.strokeStyle="#FF4444";ctx.lineWidth=4;ctx.lineCap="round";ctx.shadowColor="#FF4444";ctx.shadowBlur=8;ctx.beginPath();ctx.moveTo(-13,-13);ctx.lineTo(13,13);ctx.moveTo(13,-13);ctx.lineTo(-13,13);ctx.stroke();ctx.shadowBlur=0;ctx.restore()}
   // Emotes
