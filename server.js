@@ -1,18 +1,146 @@
-const express=require("express"),http=require("http"),{Server}=require("socket.io"),path=require("path"),fs=require("fs"),bcrypt=require("bcryptjs");
+const express=require("express"),http=require("http"),{Server}=require("socket.io"),path=require("path"),fs=require("fs"),bcrypt=require("bcryptjs"),Database=require("better-sqlite3");
 const app=express(),server=http.createServer(app),io=new Server(server,{cors:{origin:"*"},maxHttpBufferSize:5e6});
 app.use(express.static(path.join(__dirname,"public")));
 app.get("*",(req,res)=>res.sendFile(path.join(__dirname,"public","index.html")));
 const DATA=path.join(__dirname,"data");if(!fs.existsSync(DATA))fs.mkdirSync(DATA);
-const ld=(f,d)=>{try{return JSON.parse(fs.readFileSync(path.join(DATA,f),"utf8"))}catch{return d}};
-const sv=(f,d)=>fs.writeFileSync(path.join(DATA,f),JSON.stringify(d));
-const gUs=()=>ld("users.json",{}),sUs=u=>sv("users.json",u),gU=n=>{if(!n)return null;return gUs()[n.toLowerCase()]||null};
-const pU=u=>{if(!u||!u.username)return;const a=gUs();a[u.username.toLowerCase()]=u;sUs(a)};
-const gLB=()=>ld("lb.json",[]),sLB=lb=>sv("lb.json",lb);
+
+// --- SQLite Database ---
+const db=new Database(path.join(DATA,"bomber.db"));
+db.pragma("journal_mode = WAL"); // Better concurrent performance
+db.pragma("synchronous = NORMAL");
+
+// Create tables
+db.exec(`
+CREATE TABLE IF NOT EXISTS users (
+  username TEXT PRIMARY KEY COLLATE NOCASE,
+  data TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS chat (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  data TEXT NOT NULL,
+  created_at INTEGER DEFAULT (strftime('%s','now'))
+);
+CREATE TABLE IF NOT EXISTS news (
+  id INTEGER PRIMARY KEY,
+  data TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS reports (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  data TEXT NOT NULL
+);
+`);
+
+// --- Migration from JSON to SQLite (one-time) ---
+function migrateFromJSON(){
+  const usersFile=path.join(DATA,"users.json");
+  if(fs.existsSync(usersFile)){
+    try{
+      const users=JSON.parse(fs.readFileSync(usersFile,"utf8"));
+      const insert=db.prepare("INSERT OR IGNORE INTO users (username, data) VALUES (?, ?)");
+      const tx=db.transaction(()=>{for(const[k,v] of Object.entries(users)){insert.run(k,JSON.stringify(v))}});
+      tx();console.log(`Migrated ${Object.keys(users).length} users from JSON to SQLite`);
+      fs.renameSync(usersFile,usersFile+".bak");
+    }catch(e){console.error("User migration error:",e)}
+  }
+  const chatFile=path.join(DATA,"chat.json");
+  if(fs.existsSync(chatFile)){
+    try{
+      const chat=JSON.parse(fs.readFileSync(chatFile,"utf8"));
+      const insert=db.prepare("INSERT INTO chat (data) VALUES (?)");
+      const tx=db.transaction(()=>{for(const m of chat)insert.run(JSON.stringify(m))});
+      tx();console.log(`Migrated ${chat.length} chat messages`);
+      fs.renameSync(chatFile,chatFile+".bak");
+    }catch(e){console.error("Chat migration error:",e)}
+  }
+  const newsFile=path.join(DATA,"news.json");
+  if(fs.existsSync(newsFile)){
+    try{
+      const news=JSON.parse(fs.readFileSync(newsFile,"utf8"));
+      const insert=db.prepare("INSERT OR IGNORE INTO news (id, data) VALUES (?, ?)");
+      const tx=db.transaction(()=>{for(const n of news)insert.run(n.id,JSON.stringify(n))});
+      tx();console.log(`Migrated ${news.length} news articles`);
+      fs.renameSync(newsFile,newsFile+".bak");
+    }catch(e){console.error("News migration error:",e)}
+  }
+  const reportsFile=path.join(DATA,"reports.json");
+  if(fs.existsSync(reportsFile)){
+    try{
+      const reports=JSON.parse(fs.readFileSync(reportsFile,"utf8"));
+      const insert=db.prepare("INSERT INTO reports (data) VALUES (?)");
+      const tx=db.transaction(()=>{for(const r of reports)insert.run(JSON.stringify(r))});
+      tx();console.log(`Migrated ${reports.length} reports`);
+      fs.renameSync(reportsFile,reportsFile+".bak");
+    }catch(e){console.error("Reports migration error:",e)}
+  }
+  // Remove old lb.json (leaderboard is now a query)
+  const lbFile=path.join(DATA,"lb.json");
+  if(fs.existsSync(lbFile))fs.renameSync(lbFile,lbFile+".bak");
+}
+migrateFromJSON();
+
+// --- Prepared statements (much faster than ad-hoc queries) ---
+const stmts={
+  getUser:db.prepare("SELECT data FROM users WHERE username = ?"),
+  upsertUser:db.prepare("INSERT INTO users (username, data) VALUES (?, ?) ON CONFLICT(username) DO UPDATE SET data = excluded.data"),
+  deleteUser:db.prepare("DELETE FROM users WHERE username = ?"),
+  renameUser:db.prepare("UPDATE users SET username = ?, data = ? WHERE username = ?"),
+  allUsers:db.prepare("SELECT data FROM users"),
+  getChat:db.prepare("SELECT data FROM chat ORDER BY id DESC LIMIT 30"),
+  insertChat:db.prepare("INSERT INTO chat (data) VALUES (?)"),
+  clearChat:db.prepare("DELETE FROM chat"),
+  deleteChatById:db.prepare("UPDATE chat SET data = ? WHERE id = ?"),
+  getChatAll:db.prepare("SELECT id, data FROM chat ORDER BY id ASC"),
+  getNews:db.prepare("SELECT data FROM news ORDER BY id DESC LIMIT 50"),
+  insertNews:db.prepare("INSERT INTO news (id, data) VALUES (?, ?)"),
+  deleteNews:db.prepare("DELETE FROM news WHERE id = ?"),
+  getReports:db.prepare("SELECT data FROM reports ORDER BY id DESC LIMIT 200"),
+  insertReport:db.prepare("INSERT INTO reports (data) VALUES (?)"),
+  clearReports:db.prepare("DELETE FROM reports"),
+};
+
+// --- Data access functions (same API as before) ---
+function gU(n){if(!n)return null;const row=stmts.getUser.get(n.toLowerCase());return row?JSON.parse(row.data):null}
+function pU(u){if(!u||!u.username)return;stmts.upsertUser.run(u.username.toLowerCase(),JSON.stringify(u))}
 function safeUser(u){if(!u)return null;const{password,...safe}=u;return safe}
-const uLB=u=>{const lb=gLB();const i=lb.findIndex(e=>e.u===u.username);const e={u:u.username,e:u.lp,w:u.wins,l:u.losses,a:u.avatar||"🐧"};if(i>=0)lb[i]=e;else lb.push(e);lb.sort((a,b)=>b.e-a.e);sLB(lb.slice(0,100))};
-const gCh=()=>ld("chat.json",[]),sCh=c=>sv("chat.json",c);
-const gNews=()=>ld("news.json",[]),sNews=n=>sv("news.json",n);
-const gReports=()=>ld("reports.json",[]),sReports=r=>sv("reports.json",r);
+
+// Leaderboard is now a query, not a file
+function gLB(){
+  const rows=db.prepare("SELECT data FROM users ORDER BY json_extract(data, '$.lp') DESC LIMIT 100").all();
+  return rows.map(r=>{const u=JSON.parse(r.data);return{u:u.username,e:u.lp||0,w:u.wins||0,l:u.losses||0,a:u.avatar||"penguin"}})
+}
+function uLB(u){/* No-op: leaderboard is computed from users table */}
+
+// Chat
+function gCh(){const rows=stmts.getChat.all();return rows.map(r=>JSON.parse(r.data)).reverse()}
+function sCh(messages){
+  stmts.clearChat.run();
+  const insert=db.prepare("INSERT INTO chat (data) VALUES (?)");
+  const tx=db.transaction(()=>{for(const m of messages)insert.run(JSON.stringify(m))});
+  tx();
+}
+function appendChat(msg){stmts.insertChat.run(JSON.stringify(msg));
+  // Keep only last 30
+  db.prepare("DELETE FROM chat WHERE id NOT IN (SELECT id FROM chat ORDER BY id DESC LIMIT 30)").run();
+}
+
+// News
+function gNews(){return stmts.getNews.all().map(r=>JSON.parse(r.data))}
+function sNews(news){/* bulk rewrite — used rarely */
+  db.prepare("DELETE FROM news").run();
+  const insert=db.prepare("INSERT INTO news (id, data) VALUES (?, ?)");
+  const tx=db.transaction(()=>{for(const n of news)insert.run(n.id,JSON.stringify(n))});
+  tx();
+}
+
+// Reports
+function gReports(){return stmts.getReports.all().map(r=>JSON.parse(r.data))}
+function sReports(reports){
+  stmts.clearReports.run();
+  const insert=db.prepare("INSERT INTO reports (data) VALUES (?)");
+  const tx=db.transaction(()=>{for(const r of reports)insert.run(JSON.stringify(r))});
+  tx();
+}
+
 const ADMINS=["YMAC","Spillou"];
 const isAdmin=u=>u&&ADMINS.includes(u.username);
 
@@ -282,9 +410,9 @@ io.on("connection",sock=>{
   sock.on("updateUser",({user},cb)=>{const ex=gU(user.username);if(ex){const upd={...ex,...user,password:ex.password};pU(upd);uLB(upd);cb({user:safeUser(upd)})}else cb({error:"Not found"})});
   sock.on("getLB",(_,cb)=>cb({lb:gLB()}));
   sock.on("getChat",(_,cb)=>cb({chat:gCh()}));
-  sock.on("sendChat",({username,message})=>{const u=gU(username);if(!u||!message?.trim())return;const c=gCh();const ti=Math.min(5,u.lp>=2000?5:Math.floor((u.lp||0)/400));c.push({u:username,m:message.trim(),t:Date.now(),r:rN(u.lp),rc:rC(u.lp),ri:ti,a:u.avatar||"penguin"});if(c.length>30)c.splice(0,c.length-30);sCh(c);io.emit("chatUpdate",{chat:c})});
-  sock.on("clearChat",()=>{const u=gU(sock.data?.username);if(!isAdmin(u))return;sCh([]);io.emit("chatUpdate",{chat:[]})});
-  sock.on("deleteChat",({index})=>{const u=gU(sock.data?.username);if(!isAdmin(u))return;const c=gCh();if(index>=0&&index<c.length){c[index]={deleted:true,t:c[index].t};sCh(c);io.emit("chatUpdate",{chat:c})}});
+  sock.on("sendChat",({username,message})=>{const u=gU(username);if(!u||!message?.trim())return;const ti=Math.min(5,u.lp>=2000?5:Math.floor((u.lp||0)/400));const msg={u:username,m:message.trim(),t:Date.now(),r:rN(u.lp),rc:rC(u.lp),ri:ti,a:u.avatar||"penguin"};appendChat(msg);io.emit("chatUpdate",{chat:gCh()})});
+  sock.on("clearChat",()=>{const u=gU(sock.data?.username);if(!isAdmin(u))return;stmts.clearChat.run();io.emit("chatUpdate",{chat:[]})});
+  sock.on("deleteChat",({index})=>{const u=gU(sock.data?.username);if(!isAdmin(u))return;const rows=db.prepare("SELECT id, data FROM chat ORDER BY id ASC").all();if(index>=0&&index<rows.length){const row=rows[index];const msg=JSON.parse(row.data);msg.deleted=true;db.prepare("UPDATE chat SET data = ? WHERE id = ?").run(JSON.stringify(msg),row.id);io.emit("chatUpdate",{chat:gCh()})}});
   sock.on("gameChat",({message})=>{const gid=pGame.get(sock.id);if(!gid)return;const g=games.get(gid);if(!g)return;const pid=g.pl.p1.sock.id===sock.id?"p1":"p2";bc(g,"gameChatMsg",{username:g.pl[pid].name,message:message?.trim(),pid})});
   sock.on("findMatch",({username,lp})=>{
     const u=gU(username);if(!u)return;
@@ -390,26 +518,23 @@ io.on("connection",sock=>{
   // ADMIN — all verified via sock.data.username
   sock.on("admin_check",(_,cb)=>{const u=gU(sock.data?.username);cb({isAdmin:isAdmin(u)})});
   sock.on("admin_listUsers",(_,cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}
-    const all=ld("users.json",{});const list=Object.values(all).map(x=>({username:x.username,lp:x.lp||0,games:x.games||0,wins:x.wins||0,flocons:x.flocons||0,banned:!!x.banned,level:x.level||1,lastSeen:x.lastSeen||0}));list.sort((a,b)=>b.lp-a.lp);cb({users:list})});
+    const rows=stmts.allUsers.all();const list=rows.map(r=>{const x=JSON.parse(r.data);return{username:x.username,lp:x.lp||0,games:x.games||0,wins:x.wins||0,flocons:x.flocons||0,banned:!!x.banned,level:x.level||1,lastSeen:x.lastSeen||0}});list.sort((a,b)=>b.lp-a.lp);cb({users:list})});
   sock.on("admin_banUser",({username,banned},cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}const target=gU(username);if(!target){cb({error:"Utilisateur introuvable"});return}if(isAdmin(target)){cb({error:"Impossible de bannir un admin"});return}target.banned=!!banned;pU(target);cb({ok:true})});
   sock.on("admin_renameUser",({oldName,newName},cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}if(!newName||newName.length<3){cb({error:"Pseudo trop court"});return}if(gU(newName)){cb({error:"Pseudo déjà pris"});return}const target=gU(oldName);if(!target){cb({error:"Utilisateur introuvable"});return}
-    const all=ld("users.json",{});delete all[oldName.toLowerCase()];target.username=newName;all[newName.toLowerCase()]=target;sv("users.json",all);
-    const lb=gLB();const e=lb.find(x=>x.u===oldName);if(e)e.u=newName;sLB(lb);
+    stmts.deleteUser.run(oldName.toLowerCase());target.username=newName;pU(target);
     cb({ok:true})});
   sock.on("admin_giveFlocons",({username,amount},cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}const target=gU(username);if(!target){cb({error:"Utilisateur introuvable"});return}const amt=parseInt(amount)||0;target.flocons=Math.max(0,(target.flocons||0)+amt);pU(target);cb({ok:true,flocons:target.flocons})});
-  sock.on("admin_createNews",({title,html,image,thumbnail},cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}if(!title||!html){cb({error:"Titre et contenu requis"});return}const news=gNews();const art={id:Date.now(),title:String(title).slice(0,200),html:String(html).slice(0,500000),image:image?String(image).slice(0,500000):null,thumbnail:thumbnail?String(thumbnail).slice(0,500000):null,author:u.username,createdAt:Date.now()};news.unshift(art);if(news.length>50)news.length=50;sNews(news);io.emit("newsPublished",{id:art.id});cb({ok:true,article:art})});
-  sock.on("admin_deleteNews",({id},cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}let news=gNews();news=news.filter(n=>n.id!==id);sNews(news);cb({ok:true})});
+  sock.on("admin_createNews",({title,html,image,thumbnail},cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}if(!title||!html){cb({error:"Titre et contenu requis"});return}const art={id:Date.now(),title:String(title).slice(0,200),html:String(html).slice(0,500000),image:image?String(image).slice(0,500000):null,thumbnail:thumbnail?String(thumbnail).slice(0,500000):null,author:u.username,createdAt:Date.now()};stmts.insertNews.run(art.id,JSON.stringify(art));io.emit("newsPublished",{id:art.id});cb({ok:true,article:art})});
+  sock.on("admin_deleteNews",({id},cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}stmts.deleteNews.run(id);cb({ok:true})});
   // REPORTS
   sock.on("reportPlayer",({target,reason},cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}
     if(target===u.username){cb({error:"Tu ne peux pas te signaler toi-même"});return}
     const reports=gReports();
-    // Prevent spam: max 1 report per user per target per day
     const today=getDailyShopId();const dup=reports.find(r=>r.from===u.username&&r.target===target&&r.day===today);
     if(dup){cb({error:"Tu as déjà signalé ce joueur aujourd'hui"});return}
-    reports.unshift({from:u.username,target,reason:String(reason||"").slice(0,200),day:today,t:Date.now()});
-    if(reports.length>200)reports.length=200;sReports(reports);cb({ok:true})});
+    stmts.insertReport.run(JSON.stringify({from:u.username,target,reason:String(reason||"").slice(0,200),day:today,t:Date.now()}));cb({ok:true})});
   sock.on("admin_getReports",(_,cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}cb({reports:gReports()})});
-  sock.on("admin_clearReports",(_,cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}sReports([]);cb({ok:true})});
+  sock.on("admin_clearReports",(_,cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}stmts.clearReports.run();cb({ok:true})});
   sock.on("disconnect",()=>{onlineCount--;io.emit("onlineCount",onlineCount);console.log("-",sock.id,onlineCount);pInput.delete(sock.id);const i=queue.findIndex(q=>q.socket.id===sock.id);if(i>=0)queue.splice(i,1);
     // Check for active proposal
     for(const[pid,pr] of proposals){if(pr.p1.socket.id===sock.id||pr.p2.socket.id===sock.id){clearTimeout(pr.timer);proposals.delete(pid);const other=pr.p1.socket.id===sock.id?pr.p2:pr.p1;queue.push(other);other.socket.emit("matchDeclined",{reason:"Adversaire déconnecté"});findMatch()}}
