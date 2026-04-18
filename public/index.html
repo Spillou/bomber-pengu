@@ -47,10 +47,8 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
 <!-- LANDING -->
 <div id="pg-landing"><div style="height:100vh;display:flex;flex-direction:column;background:radial-gradient(ellipse at 50% 30%,#1B4D72 0%,#0B1E36 70%);overflow:hidden;position:relative">
 <canvas id="landingSnow" style="position:absolute;inset:0;pointer-events:none;opacity:.25;z-index:0"></canvas>
-<!-- NAV -->
 <nav style="display:flex;align-items:center;justify-content:space-between;padding:10px 30px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;z-index:2"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:24px">🐧</span><span class="f1" style="font-size:18px;font-weight:700;letter-spacing:2px">BOMBER PENGU</span></div><button class="btn" style="padding:8px 20px;font-size:14px" onclick="go('login')">JOUER</button></nav>
-<!-- CONTENT — centered vertically -->
-<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2;padding:10px 30px;gap:12px;text-align:center">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2;padding:10px 30px;gap:14px;text-align:center">
   <!-- Hero -->
   <div style="display:flex;align-items:center;gap:18px">
     <div style="font-size:72px;animation:float 3s ease-in-out infinite">🐧</div>
@@ -61,28 +59,21 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
     <span style="background:linear-gradient(135deg,#38BDF8,#0EA5E9,#67D4FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200%;animation:shimmer 3s linear infinite">BOMBER</span>
     <span style="color:#FFF"> PENGU</span>
   </h1>
-  <p style="font-size:16px;color:rgba(255,255,255,.55);max-width:500px;margin:0;line-height:1.4">Le Bomberman multijoueur temps réel. Pose des bombes, récupère des power-ups, grimpe les rangs et deviens le Maître Pingouin.</p>
+  <p style="font-size:16px;color:rgba(255,255,255,.55);max-width:560px;margin:0;line-height:1.5">Affronte de vrais joueurs dans des arènes de glace explosives. Pose des bombes, récupère des power-ups, grimpe du Bronze au rang Maître et personnalise ton pingouin avec des dizaines de skins et accessoires.</p>
   <button class="btn" style="padding:16px 48px;font-size:20px;animation:pulse 2s infinite;border-radius:14px;font-weight:700;letter-spacing:1px" onclick="go('login')">🎮 JOUER GRATUITEMENT</button>
   <div style="display:flex;gap:16px;font-size:12px;color:rgba(255,255,255,.35)">
-    <span>🌐 100% navigateur</span><span>⚡ Temps réel</span><span>🆓 Gratuit</span>
+    <span>🌐 Aucun téléchargement</span><span>⚡ Multijoueur temps réel</span><span>🆓 100% gratuit</span>
   </div>
-  <!-- Features row -->
-  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:4px;max-width:900px">
-    <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:12px;padding:16px 20px;text-align:center;flex:1;min-width:130px"><div style="font-size:30px;margin-bottom:4px">💣</div><div class="f1" style="font-size:14px;font-weight:700;color:#67D4FF">Bombes & Kick</div></div>
-    <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:12px;padding:16px 20px;text-align:center;flex:1;min-width:130px"><div style="font-size:30px;margin-bottom:4px">🏆</div><div class="f1" style="font-size:14px;font-weight:700;color:#FBBF24">Ranked Bo5</div></div>
-    <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:12px;padding:16px 20px;text-align:center;flex:1;min-width:130px"><div style="font-size:30px;margin-bottom:4px">🎨</div><div class="f1" style="font-size:14px;font-weight:700;color:#EC4899">25+ Skins</div></div>
-    <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:12px;padding:16px 20px;text-align:center;flex:1;min-width:130px"><div style="font-size:30px;margin-bottom:4px">🎫</div><div class="f1" style="font-size:14px;font-weight:700;color:#A78BFA">Battle Pass</div></div>
-    <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:12px;padding:16px 20px;text-align:center;flex:1;min-width:130px"><div style="font-size:30px;margin-bottom:4px">👥</div><div class="f1" style="font-size:14px;font-weight:700;color:#34D399">Social</div></div>
+  <!-- Features -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:950px;margin-top:6px">
+    <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:12px;padding:14px 18px;text-align:center;flex:1;min-width:140px"><div style="font-size:28px;margin-bottom:4px">💣</div><div class="f1" style="font-size:13px;font-weight:700;color:#67D4FF">Stratégie explosive</div><div style="font-size:10px;color:#7A9BBF;margin-top:3px">4 power-ups, kick de bombes, réactions en chaîne</div></div>
+    <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:12px;padding:14px 18px;text-align:center;flex:1;min-width:140px"><div style="font-size:28px;margin-bottom:4px">🏆</div><div class="f1" style="font-size:13px;font-weight:700;color:#FBBF24">Ranked compétitif</div><div style="font-size:10px;color:#7A9BBF;margin-top:3px">Matchs Bo5, MMR Elo, 6 rangs à gravir</div></div>
+    <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:12px;padding:14px 18px;text-align:center;flex:1;min-width:140px"><div style="font-size:28px;margin-bottom:4px">🎨</div><div class="f1" style="font-size:13px;font-weight:700;color:#EC4899">Personnalisation</div><div style="font-size:10px;color:#7A9BBF;margin-top:3px">Skins, arènes, émotes, avatars animés</div></div>
+    <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:12px;padding:14px 18px;text-align:center;flex:1;min-width:140px"><div style="font-size:28px;margin-bottom:4px">🎫</div><div class="f1" style="font-size:13px;font-weight:700;color:#A78BFA">Progression</div><div style="font-size:10px;color:#7A9BBF;margin-top:3px">Battle pass 25 paliers, quêtes quotidiennes</div></div>
+    <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:12px;padding:14px 18px;text-align:center;flex:1;min-width:140px"><div style="font-size:28px;margin-bottom:4px">👥</div><div class="f1" style="font-size:13px;font-weight:700;color:#34D399">Communauté</div><div style="font-size:10px;color:#7A9BBF;margin-top:3px">Amis, chat global, profils, boutique rotative</div></div>
   </div>
   <!-- Ranks -->
   <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap" id="rankShowcase"></div>
-  <!-- Stats -->
-  <div style="display:flex;gap:10px;justify-content:center">
-    <div style="background:#15334D55;border:1px solid #1E4D7A;border-radius:10px;padding:8px 16px;text-align:center"><div class="f1" style="font-size:22px;font-weight:700;color:#34D399">25+</div><div style="color:#7A9BBF;font-size:10px">Skins</div></div>
-    <div style="background:#15334D55;border:1px solid #1E4D7A;border-radius:10px;padding:8px 16px;text-align:center"><div class="f1" style="font-size:22px;font-weight:700;color:#FBBF24">13</div><div style="color:#7A9BBF;font-size:10px">Arènes</div></div>
-    <div style="background:#15334D55;border:1px solid #1E4D7A;border-radius:10px;padding:8px 16px;text-align:center"><div class="f1" style="font-size:22px;font-weight:700;color:#A78BFA">20</div><div style="color:#7A9BBF;font-size:10px">Émotes</div></div>
-    <div style="background:#15334D55;border:1px solid #1E4D7A;border-radius:10px;padding:8px 16px;text-align:center"><div class="f1" style="font-size:22px;font-weight:700;color:#EC4899">27</div><div style="color:#7A9BBF;font-size:10px">Avatars</div></div>
-  </div>
 </div>
 <div style="flex-shrink:0;padding:6px;text-align:center;color:rgba(255,255,255,.1);font-size:10px;z-index:2">Bomber Pengu © 2026</div>
 </div></div>
