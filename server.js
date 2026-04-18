@@ -5,8 +5,8 @@ app.get("*",(req,res)=>res.sendFile(path.join(__dirname,"public","index.html")))
 const DATA=path.join(__dirname,"data");if(!fs.existsSync(DATA))fs.mkdirSync(DATA);
 const ld=(f,d)=>{try{return JSON.parse(fs.readFileSync(path.join(DATA,f),"utf8"))}catch{return d}};
 const sv=(f,d)=>fs.writeFileSync(path.join(DATA,f),JSON.stringify(d));
-const gUs=()=>ld("users.json",{}),sUs=u=>sv("users.json",u),gU=n=>gUs()[n.toLowerCase()]||null;
-const pU=u=>{const a=gUs();a[u.username.toLowerCase()]=u;sUs(a)};
+const gUs=()=>ld("users.json",{}),sUs=u=>sv("users.json",u),gU=n=>{if(!n)return null;return gUs()[n.toLowerCase()]||null};
+const pU=u=>{if(!u||!u.username)return;const a=gUs();a[u.username.toLowerCase()]=u;sUs(a)};
 const gLB=()=>ld("lb.json",[]),sLB=lb=>sv("lb.json",lb);
 function safeUser(u){if(!u)return null;const{password,...safe}=u;return safe}
 const uLB=u=>{const lb=gLB();const i=lb.findIndex(e=>e.u===u.username);const e={u:u.username,e:u.lp,w:u.wins,l:u.losses,a:u.avatar||"🐧"};if(i>=0)lb[i]=e;else lb.push(e);lb.sort((a,b)=>b.e-a.e);sLB(lb.slice(0,100))};
