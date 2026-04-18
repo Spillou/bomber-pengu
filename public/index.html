@@ -352,6 +352,8 @@ const esc=s=>{const d=document.createElement("div");d.textContent=s;return d.inn
 const fmtT=s=>`${Math.floor(s/60)}:${(s%60).toString().padStart(2,"0")}`;
 
 let socket=io(),me=null,isReg=false,pingMs=0,onlineCnt=0,myPass=null;
+let audioCtx=null,sfxOn=true,sfxVol=0.5;
+let snowFlakes=[],snowRunning=false;
 let myRole=null,opp=null,grid=null,ent=null,bombs=[],pups=[],expl=[],emotes=[];
 let score={p1:0,p2:0},roundNum=0,timer=120,sdeath=false,curAr="glacier";
 let stats={b:1,r:2,s:1,k:false},keys={},particles=[],moveInt=null,drawUsed=false;
@@ -898,7 +900,7 @@ function buildEmoteBar(){const bar=document.getElementById("eBar");if(!bar)retur
 
 // FEATURES + RANKS on landing
 [{i:"💣",t:"Pose & Esquive",d:"Place des bombes stratégiquement pour piéger ton adversaire. Les explosions se propagent en croix et peuvent déclencher des réactions en chaîne."},{i:"🎁",t:"4 Power-ups",d:"Portée d'explosion, vitesse de déplacement, bombes supplémentaires, et kick pour envoyer tes bombes sur l'adversaire."},{i:"⚔️",t:"Matchs Ranked Bo5",d:"Chaque match se joue en 3 manches gagnantes. Gagne des LP pour monter de Bronze à Maître dans le classement."},{i:"💀",t:"Mort Subite",d:"Après 2 minutes, les murs se referment en spirale vers le centre. Plus de place pour fuir — il faut se battre."},{i:"🏪",t:"Boutique & Skins",d:"Personnalise ton pingouin avec 6 skins et 4 arènes différentes. Achète-les avec des Flocons."},{i:"🏅",t:"Badges & Profil",d:"Débloque 13 badges en jouant. Mets tes 3 préférés en avant sur ton profil visible par tous."}].forEach(f=>{const d=document.createElement("div");d.style.cssText="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:22px 20px;flex:1 1 240px;max-width:280px";d.innerHTML=`<div style="font-size:36px;margin-bottom:8px">${f.i}</div><h3 class="f1" style="font-size:17px;margin-bottom:4px">${f.t}</h3><p style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.5;margin:0">${f.d}</p>`;document.getElementById("feat").appendChild(d)});
-TRS.forEach((r,i)=>{const d=document.createElement("div");d.style.cssText=`background:${r.g};border-radius:14px;padding:18px 24px;text-align:center;min-width:120px;box-shadow:0 4px 16px ${r.gl};transition:transform .15s`;d.onmouseover=()=>d.style.transform="scale(1.05)";d.onmouseout=()=>d.style.transform="scale(1)";d.innerHTML=`<div style="font-size:32px;margin-bottom:4px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))">${r.i}</div><div class="f1" style="font-size:16px;font-weight:700;color:#FFF;text-shadow:0 1px 3px rgba(0,0,0,.3)">${r.n}</div><div style="font-size:10px;color:rgba(255,255,255,.7);margin-top:2px" class="f1">${i<5?`${i*400}-${(i+1)*400-1} LP`:"2000+ LP"}</div>`;document.getElementById("rankShowcase").appendChild(d)});
+TRS.forEach((r,i)=>{const d=document.createElement("div");d.style.cssText=`background:${r.g};border-radius:14px;padding:18px 24px;text-align:center;min-width:120px;box-shadow:0 4px 16px ${r.gl};transition:transform .15s`;d.onmouseover=()=>d.style.transform="scale(1.05)";d.onmouseout=()=>d.style.transform="scale(1)";d.innerHTML=`<div style="font-size:32px;margin-bottom:4px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))">${r.i}</div><div class="f1" style="font-size:16px;font-weight:700;color:#FFF;text-shadow:0 1px 3px rgba(0,0,0,.3)">${r.n}</div><div style="font-size:10px;color:rgba(255,255,255,.7);margin-top:2px" class="f1">${i<5?`${i*400}-${(i+1)*400-1} LP`:"2000+ LP"}</div>`;const rs=document.getElementById("rankShowcase");if(rs)rs.appendChild(d)});
 
 // PARTICLES
 function spawnP(cx,cy,n,col){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=.5+Math.random()*2.5;particles.push({x:cx,y:cy,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,decay:.012+Math.random()*.02,size:2+Math.random()*3,color:col})}}
@@ -906,7 +908,6 @@ function spawnP(cx,cy,n,col){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*
 // RENDER
 const cv=document.getElementById("cv"),ctx=cv.getContext("2d");cv.width=GW*CELL;cv.height=GH*CELL;
 // SOUND SYSTEM — Web Audio API (no files needed)
-let audioCtx=null,sfxOn=true,sfxVol=0.5;
 function getAC(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx}
 function getMasterGain(){const ac=getAC();const g=ac.createGain();g.gain.value=sfxVol;g.connect(ac.destination);return g}
 function sfx(type){if(!sfxOn||sfxVol<=0)return;try{const ac=getAC();const g=getMasterGain();
@@ -993,9 +994,7 @@ function render(){const W=GW*CELL,H=GH*CELL,now=Date.now(),ar=AR[curAr]||AR.glac
     ctx.restore()}
   requestAnimationFrame(render)}
 requestAnimationFrame(render);
-// Auto-login
 // SNOW PARTICLES
-let snowFlakes=[],snowRunning=false;
 function initSnow(){
   const cv=document.getElementById("snowCv")||document.getElementById("landingSnow");if(!cv||snowRunning)return;
   const ctx=cv.getContext("2d");snowRunning=true;
