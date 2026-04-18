@@ -775,8 +775,8 @@ function doAcceptMatch(){if(!curProposalId)return;socket.emit("acceptMatch",{pro
   const el=document.getElementById("acceptTimer");if(el)el.innerHTML=`<span style="color:#34D399;font-size:16px">✓ Accepté ! En attente...</span>`}
 function doDeclineMatch(){if(!curProposalId)return;socket.emit("declineMatch",{proposalId:curProposalId});curProposalId=null;if(acceptCountdown)clearInterval(acceptCountdown);go("menu")}
 
-socket.on("matchFound",d=>{if(acceptCountdown)clearInterval(acceptCountdown);curProposalId=null;myRole=d.you;opp=d.opp;curAr=d.me?.arena||"glacier";score={p1:0,p2:0};roundNum=0;stats={b:1,r:2,s:1,k:false};drawUsed=false;grid=null;ent=null;bombs=[];pups=[];expl=[];emotes=[];particles=[];go("game");setTimeout(resizeGame,50);updSc();updDrawBtn();buildEmoteBar()});
-socket.on("roundStart",d=>{roundNum=d.round;curAr=d.arena||"glacier";if(d.sc)score=d.sc;
+socket.on("matchFound",d=>{console.log("MATCHFOUND",d.you,d.opp?.username);if(acceptCountdown)clearInterval(acceptCountdown);curProposalId=null;myRole=d.you;opp=d.opp;curAr=d.me?.arena||"glacier";score={p1:0,p2:0};roundNum=0;stats={b:1,r:2,s:1,k:false};drawUsed=false;grid=null;ent=null;bombs=[];pups=[];expl=[];emotes=[];particles=[];go("game");setTimeout(resizeGame,50);updSc();updDrawBtn();buildEmoteBar()});
+socket.on("roundStart",d=>{console.log("ROUNDSTART",d.round,d.arena);roundNum=d.round;curAr=d.arena||"glacier";if(d.sc)score=d.sc;
   if(d.round===1){
     // VS ANIMATION for first round
     const mRk=gR(me?.lp);const oRk=gR(opp?.lp);const mLpT=(me?.lp||0)%100;const oLpT=(opp?.lp||0)%100;
@@ -810,8 +810,8 @@ socket.on("countdown",d=>{sfx("countdown");
   // For round 1, keep VS visible for first ticks (v=4,3 stay VS), then show countdown for v=2,1,0
   if(roundNum===1&&d.v>2)return; // VS still showing
   if(d.v>0)showOv(`<div class="f1" style="font-size:18px;color:#7A9BBF;letter-spacing:4px;margin-bottom:8px">ROUND ${roundNum}</div><div class="f1" style="font-size:80px;font-weight:700;color:#67D4FF;text-shadow:0 0 40px #0EA5E9">${d.v}</div>`);else showOv(`<div class="f1" style="font-size:80px;font-weight:700;color:#34D399;text-shadow:0 0 40px #34D399">GO!</div>`)});
-socket.on("roundBegin",d=>{grid=d.grid;ent=d.ent;bombs=[];pups=[];expl=[];emotes=[];particles=[];stats={b:1,r:2,s:1,k:false};timer=120;sdeath=false;visPos={p1:{px:ent.p1.px,py:ent.p1.py},p2:{px:ent.p2.px,py:ent.p2.py}};hideOv();updSc();updSt();startMv()});
-socket.on("tick",d=>{ent=d.ent;bombs=d.bombs;pups=d.pups;timer=d.timer;if(d.grid)grid=d.grid;
+socket.on("roundBegin",d=>{console.log("ROUNDBEGIN received",d.round,d.grid?.length,d.ent?.p1?.px);grid=d.grid;ent=d.ent;bombs=[];pups=[];expl=[];emotes=[];particles=[];stats={b:1,r:2,s:1,k:false};timer=120;sdeath=false;visPos={p1:{px:ent.p1.px,py:ent.p1.py},p2:{px:ent.p2.px,py:ent.p2.py}};hideOv();updSc();updSt();startMv()});
+socket.on("tick",d=>{if(!grid&&d.grid)console.log("TICK: got grid from tick!",d.grid.length);ent=d.ent;bombs=d.bombs;pups=d.pups;timer=d.timer;if(d.grid)grid=d.grid;
   // Re-stamp explosions with client time for rendering consistency
   const newExpl=d.expl||[];for(const ex of newExpl){if(!ex._ct){ex._ct=Date.now();const existing=expl.find(e=>e.bx===ex.bx&&e.by===ex.by);if(existing)ex._ct=existing._ct}}
   expl=newExpl;emotes=d.emotes||[];const m=ent?.[myRole];if(m){stats={b:m.mB,r:m.range,s:m.spd,k:m.kick};updSt()}updSc()});
