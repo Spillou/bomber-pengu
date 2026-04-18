@@ -912,9 +912,9 @@ function spawnP(cx,cy,n,col){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*
 const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
 cv.width=GW*RCELL;cv.height=GH*RCELL;
 function resizeGame(){
-  const area=document.getElementById("gameArea");const wrap=document.getElementById("cvWrap");if(!area||!wrap)return;
+  const area=document.getElementById("gameArea");const wrap=document.getElementById("cvWrap");const canvas=document.getElementById("cv");if(!area||!wrap||!canvas)return;
   const aw=area.clientWidth-20,ah=area.clientHeight-20;
-  const cw=cv.width+4,ch=cv.height+4;
+  const cw=canvas.width+4,ch=canvas.height+4;
   const s=Math.min(aw/cw,ah/ch,1.5);
   wrap.style.transform=s<0.99?`scale(${s})`:"none";
 }
