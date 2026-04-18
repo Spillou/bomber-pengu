@@ -1,5 +1,5 @@
 const express=require("express"),http=require("http"),{Server}=require("socket.io"),path=require("path"),fs=require("fs"),bcrypt=require("bcryptjs");
-const app=express(),server=http.createServer(app),io=new Server(server,{cors:{origin:"*"}});
+const app=express(),server=http.createServer(app),io=new Server(server,{cors:{origin:"*"},maxHttpBufferSize:5e6});
 app.use(express.static(path.join(__dirname,"public")));
 app.get("*",(req,res)=>res.sendFile(path.join(__dirname,"public","index.html")));
 const DATA=path.join(__dirname,"data");if(!fs.existsSync(DATA))fs.mkdirSync(DATA);
@@ -382,7 +382,7 @@ io.on("connection",sock=>{
     const lb=gLB();const e=lb.find(x=>x.u===oldName);if(e)e.u=newName;sLB(lb);
     cb({ok:true})});
   sock.on("admin_giveFlocons",({username,amount},cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}const target=gU(username);if(!target){cb({error:"Utilisateur introuvable"});return}const amt=parseInt(amount)||0;target.flocons=Math.max(0,(target.flocons||0)+amt);pU(target);cb({ok:true,flocons:target.flocons})});
-  sock.on("admin_createNews",({title,html,image},cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}if(!title||!html){cb({error:"Titre et contenu requis"});return}const news=gNews();const art={id:Date.now(),title:String(title).slice(0,200),html:String(html).slice(0,20000),image:image?String(image).slice(0,2000):null,author:u.username,createdAt:Date.now()};news.unshift(art);if(news.length>50)news.length=50;sNews(news);io.emit("newsPublished",{id:art.id});cb({ok:true,article:art})});
+  sock.on("admin_createNews",({title,html,image},cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}if(!title||!html){cb({error:"Titre et contenu requis"});return}const news=gNews();const art={id:Date.now(),title:String(title).slice(0,200),html:String(html).slice(0,500000),image:image?String(image).slice(0,500000):null,author:u.username,createdAt:Date.now()};news.unshift(art);if(news.length>50)news.length=50;sNews(news);io.emit("newsPublished",{id:art.id});cb({ok:true,article:art})});
   sock.on("admin_deleteNews",({id},cb)=>{const u=gU(sock.data?.username);if(!isAdmin(u)){cb({error:"Non autorisé"});return}let news=gNews();news=news.filter(n=>n.id!==id);sNews(news);cb({ok:true})});
   // REPORTS
   sock.on("reportPlayer",({target,reason},cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}
