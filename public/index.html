@@ -176,8 +176,8 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
 <!-- Top: score bar -->
 <div id="scBar" style="display:flex;align-items:center;justify-content:center;gap:16px;padding:8px 24px;background:rgba(14,165,233,.06);border-bottom:1px solid #1E4D7A"></div>
 <!-- Middle: canvas -->
-<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:8px;position:relative">
-<div style="position:relative;border-radius:12px;overflow:hidden;border:2px solid #1E4D7A;box-shadow:0 0 60px rgba(14,165,233,.12)"><canvas id="cv"></canvas><div id="ov" class="hidden" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;background:rgba(11,30,54,.88);gap:10px"></div></div>
+<div id="gameArea" style="flex:1;display:flex;align-items:center;justify-content:center;padding:8px;position:relative;min-height:0">
+<div id="cvWrap" style="position:relative;border-radius:12px;overflow:hidden;border:2px solid #1E4D7A;box-shadow:0 0 60px rgba(14,165,233,.12);max-width:100%;max-height:100%"><canvas id="cv" style="display:block;width:100%;height:100%"></canvas><div id="ov" class="hidden" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;background:rgba(11,30,54,.88);gap:10px"></div></div>
 <div id="pingInd" style="position:absolute;bottom:12px;right:16px;color:#7A9BBF;font-size:10px;opacity:.6" class="f1"></div>
 </div>
 <!-- Bottom: chat messages + stats + emotes + input -->
@@ -379,7 +379,7 @@ function checkRejoin(){socket.emit("rejoinGame",null,r=>{if(r&&r.found){
     myRole=r.you;opp=r.opp;curAr=r.arena||"glacier";score=r.sc||{p1:0,p2:0};roundNum=r.round||1;
     grid=r.grid;ent=r.ent;stats={b:1,r:2,s:1,k:false};drawUsed=false;
     if(ent){visPos={p1:{px:ent.p1.px,py:ent.p1.py},p2:{px:ent.p2.px,py:ent.p2.py}}}
-    go("game");updSc();updSt();buildEmoteBar();startMv();hideOv();
+    go("game");setTimeout(resizeGame,50);updSc();updSt();buildEmoteBar();startMv();hideOv();
   }})}
 function doAuth(){document.getElementById("loginErr").style.display="none";const u=document.getElementById("inU").value.trim(),p=document.getElementById("inP").value.trim();if(!u||!p){document.getElementById("loginErr").style.display="block";document.getElementById("loginErr").textContent="Remplis tous les champs";return}socket.emit(isReg?"register":"login",{username:u,password:p},r=>{if(r.error){document.getElementById("loginErr").style.display="block";document.getElementById("loginErr").textContent=r.error;return}me=r.user;myPass=p;try{localStorage.setItem("bp_sess",JSON.stringify({u,p}))}catch(e){}checkRejoin();go("menu");updateAdminVisibility();checkUnreadNews()})}
 function logout(){me=null;try{localStorage.removeItem("bp_sess")}catch(e){}go("login")}
@@ -775,7 +775,7 @@ function doAcceptMatch(){if(!curProposalId)return;socket.emit("acceptMatch",{pro
   const el=document.getElementById("acceptTimer");if(el)el.innerHTML=`<span style="color:#34D399;font-size:16px">✓ Accepté ! En attente...</span>`}
 function doDeclineMatch(){if(!curProposalId)return;socket.emit("declineMatch",{proposalId:curProposalId});curProposalId=null;if(acceptCountdown)clearInterval(acceptCountdown);go("menu")}
 
-socket.on("matchFound",d=>{if(acceptCountdown)clearInterval(acceptCountdown);curProposalId=null;myRole=d.you;opp=d.opp;curAr=d.me?.arena||"glacier";score={p1:0,p2:0};roundNum=0;stats={b:1,r:2,s:1,k:false};drawUsed=false;grid=null;ent=null;bombs=[];pups=[];expl=[];emotes=[];particles=[];go("game");updSc();updDrawBtn();buildEmoteBar()});
+socket.on("matchFound",d=>{if(acceptCountdown)clearInterval(acceptCountdown);curProposalId=null;myRole=d.you;opp=d.opp;curAr=d.me?.arena||"glacier";score={p1:0,p2:0};roundNum=0;stats={b:1,r:2,s:1,k:false};drawUsed=false;grid=null;ent=null;bombs=[];pups=[];expl=[];emotes=[];particles=[];go("game");setTimeout(resizeGame,50);updSc();updDrawBtn();buildEmoteBar()});
 socket.on("roundStart",d=>{roundNum=d.round;curAr=d.arena||"glacier";if(d.sc)score=d.sc;
   if(d.round===1){
     // VS ANIMATION for first round
@@ -907,6 +907,16 @@ function spawnP(cx,cy,n,col){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*
 
 // RENDER
 const cv=document.getElementById("cv"),ctx=cv.getContext("2d");cv.width=GW*CELL;cv.height=GH*CELL;
+function resizeGame(){
+  const area=document.getElementById("gameArea");const wrap=document.getElementById("cvWrap");if(!area||!wrap)return;
+  const aw=area.clientWidth-16,ah=area.clientHeight-16;
+  const cw=GW*CELL,ch=GH*CELL,ratio=cw/ch;
+  let w,h;
+  if(aw/ah>ratio){h=ah;w=h*ratio}else{w=aw;h=w/ratio}
+  wrap.style.width=Math.floor(w)+"px";wrap.style.height=Math.floor(h)+"px";
+}
+window.addEventListener("resize",resizeGame);
+setTimeout(resizeGame,100);
 // SOUND SYSTEM — Web Audio API (no files needed)
 function getAC(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx}
 function getMasterGain(){const ac=getAC();const g=ac.createGain();g.gain.value=sfxVol;g.connect(ac.destination);return g}
