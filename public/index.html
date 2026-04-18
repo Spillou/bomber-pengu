@@ -176,8 +176,8 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
 <!-- Top: score bar -->
 <div id="scBar" style="display:flex;align-items:center;justify-content:center;gap:16px;padding:8px 24px;background:rgba(14,165,233,.06);border-bottom:1px solid #1E4D7A"></div>
 <!-- Middle: canvas -->
-<div id="gameArea" style="flex:1;display:flex;align-items:center;justify-content:center;padding:8px;position:relative;overflow:hidden">
-<div id="cvWrap" style="position:relative;border-radius:12px;overflow:hidden;border:2px solid #1E4D7A;box-shadow:0 0 60px rgba(14,165,233,.12);transform-origin:center center"><canvas id="cv"></canvas><div id="ov" class="hidden" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;background:rgba(11,30,54,.88);gap:10px"></div></div>
+<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:8px;position:relative;overflow:hidden">
+<div style="position:relative;border-radius:12px;overflow:hidden;border:2px solid #1E4D7A;box-shadow:0 0 60px rgba(14,165,233,.12);zoom:1.35"><canvas id="cv"></canvas><div id="ov" class="hidden" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;background:rgba(11,30,54,.88);gap:10px"></div></div>
 <div id="pingInd" style="position:absolute;bottom:12px;right:16px;color:#7A9BBF;font-size:10px;opacity:.6" class="f1"></div>
 </div>
 <!-- Bottom: chat messages + stats + emotes + input -->
@@ -198,8 +198,6 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
 
 <script>
 const GW=15,GH=13,CELL=52,FUSE=3400,EXDUR=500;
-const RSCALE=1.4; // Render scale: canvas pixels = CELL * RSCALE
-const RCELL=Math.round(CELL*RSCALE); // 73px per cell on screen
 
 // RARITIES: common, rare, epic, legendary
 const RAR={common:{n:"Commun",c:"#94A3B8",g:"linear-gradient(135deg,#94A3B8,#CBD5E1)"},rare:{n:"Rare",c:"#60A5FA",g:"linear-gradient(135deg,#3B82F6,#60A5FA)"},epic:{n:"Épique",c:"#A855F7",g:"linear-gradient(135deg,#9333EA,#C084FC)"},legendary:{n:"Légendaire",c:"#FBBF24",g:"linear-gradient(135deg,#F59E0B,#FCD34D)"}};
@@ -381,7 +379,7 @@ function checkRejoin(){socket.emit("rejoinGame",null,r=>{if(r&&r.found){
     myRole=r.you;opp=r.opp;curAr=r.arena||"glacier";score=r.sc||{p1:0,p2:0};roundNum=r.round||1;
     grid=r.grid;ent=r.ent;stats={b:1,r:2,s:1,k:false};drawUsed=false;
     if(ent){visPos={p1:{px:ent.p1.px,py:ent.p1.py},p2:{px:ent.p2.px,py:ent.p2.py}}}
-    go("game");setTimeout(resizeGame,50);updSc();updSt();buildEmoteBar();startMv();hideOv();
+    go("game");updSc();updSt();buildEmoteBar();startMv();hideOv();
   }})}
 function doAuth(){document.getElementById("loginErr").style.display="none";const u=document.getElementById("inU").value.trim(),p=document.getElementById("inP").value.trim();if(!u||!p){document.getElementById("loginErr").style.display="block";document.getElementById("loginErr").textContent="Remplis tous les champs";return}socket.emit(isReg?"register":"login",{username:u,password:p},r=>{if(r.error){document.getElementById("loginErr").style.display="block";document.getElementById("loginErr").textContent=r.error;return}me=r.user;myPass=p;try{localStorage.setItem("bp_sess",JSON.stringify({u,p}))}catch(e){}checkRejoin();go("menu");updateAdminVisibility();checkUnreadNews()})}
 function logout(){me=null;try{localStorage.removeItem("bp_sess")}catch(e){}go("login")}
@@ -777,7 +775,7 @@ function doAcceptMatch(){if(!curProposalId)return;socket.emit("acceptMatch",{pro
   const el=document.getElementById("acceptTimer");if(el)el.innerHTML=`<span style="color:#34D399;font-size:16px">✓ Accepté ! En attente...</span>`}
 function doDeclineMatch(){if(!curProposalId)return;socket.emit("declineMatch",{proposalId:curProposalId});curProposalId=null;if(acceptCountdown)clearInterval(acceptCountdown);go("menu")}
 
-socket.on("matchFound",d=>{if(acceptCountdown)clearInterval(acceptCountdown);curProposalId=null;myRole=d.you;opp=d.opp;curAr=d.me?.arena||"glacier";score={p1:0,p2:0};roundNum=0;stats={b:1,r:2,s:1,k:false};drawUsed=false;grid=null;ent=null;bombs=[];pups=[];expl=[];emotes=[];particles=[];go("game");setTimeout(resizeGame,50);updSc();updDrawBtn();buildEmoteBar()});
+socket.on("matchFound",d=>{if(acceptCountdown)clearInterval(acceptCountdown);curProposalId=null;myRole=d.you;opp=d.opp;curAr=d.me?.arena||"glacier";score={p1:0,p2:0};roundNum=0;stats={b:1,r:2,s:1,k:false};drawUsed=false;grid=null;ent=null;bombs=[];pups=[];expl=[];emotes=[];particles=[];go("game");updSc();updDrawBtn();buildEmoteBar()});
 socket.on("roundStart",d=>{roundNum=d.round;curAr=d.arena||"glacier";if(d.sc)score=d.sc;
   if(d.round===1){
     // VS ANIMATION for first round
@@ -909,16 +907,7 @@ TRS.forEach((r,i)=>{const d=document.createElement("div");d.style.cssText=`backg
 function spawnP(cx,cy,n,col){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=.5+Math.random()*2.5;particles.push({x:cx,y:cy,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,decay:.012+Math.random()*.02,size:2+Math.random()*3,color:col})}}
 
 // RENDER
-const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
-cv.width=GW*RCELL;cv.height=GH*RCELL;
-function resizeGame(){
-  const area=document.getElementById("gameArea");const wrap=document.getElementById("cvWrap");const canvas=document.getElementById("cv");if(!area||!wrap||!canvas)return;
-  const aw=area.clientWidth-20,ah=area.clientHeight-20;
-  const cw=canvas.width+4,ch=canvas.height+4;
-  const s=Math.min(aw/cw,ah/ch,1.5);
-  wrap.style.transform=s<0.99?`scale(${s})`:"none";
-}
-window.addEventListener("resize",resizeGame);
+const cv=document.getElementById("cv"),ctx=cv.getContext("2d");cv.width=GW*CELL;cv.height=GH*CELL;
 // SOUND SYSTEM — Web Audio API (no files needed)
 function getAC(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx}
 function getMasterGain(){const ac=getAC();const g=ac.createGain();g.gain.value=sfxVol;g.connect(ac.destination);return g}
@@ -943,12 +932,10 @@ function sfx(type){if(!sfxOn||sfxVol<=0)return;try{const ac=getAC();const g=getM
     const o=ac.createOscillator();o.type="sine";o.frequency.setValueAtTime(200,ac.currentTime);o.frequency.exponentialRampToValueAtTime(80,ac.currentTime+.12);g.gain.setValueAtTime(.1,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.12);o.connect(g);o.start();o.stop(ac.currentTime+.15)}
 }catch(e){}}
 
-function render(){try{const W=GW*RCELL,H=GH*RCELL,now=Date.now(),ar=AR[curAr]||AR.glacier;
+function render(){try{const W=GW*CELL,H=GH*CELL,now=Date.now(),ar=AR[curAr]||AR.glacier;
   ctx.clearRect(0,0,W,H);
-  ctx.save();ctx.scale(RSCALE,RSCALE);
-  // Draw floor background always (in original CELL coords)
-  ctx.fillStyle=ar.f1;ctx.fillRect(0,0,GW*CELL,GH*CELL);
-  if(!grid||!ent){ctx.restore();requestAnimationFrame(render);return}
+  ctx.fillStyle=ar.f1;ctx.fillRect(0,0,W,H);
+  if(!grid||!ent){requestAnimationFrame(render);return}
   // Interpolate visual positions toward server positions
   for(const pid of["p1","p2"]){const e=ent[pid];if(!e)continue;if(!visPos[pid])visPos[pid]={px:e.px,py:e.py};const v=visPos[pid];const dx=e.px-v.px,dy=e.py-v.py;const dist=Math.sqrt(dx*dx+dy*dy);if(dist>CELL*3){v.px=e.px;v.py=e.py}else if(dist>0.5){v.px+=dx*LERP;v.py+=dy*LERP}else{v.px=e.px;v.py=e.py}}
   for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){if(grid[y]?.[x]===0){ctx.fillStyle=(x+y)%2===0?ar.f1:ar.f2;ctx.fillRect(x*CELL,y*CELL,CELL,CELL)}}
@@ -980,11 +967,11 @@ function render(){try{const W=GW*RCELL,H=GH*RCELL,now=Date.now(),ar=AR[curAr]||A
   for(const ex of expl){const age=(now-(ex._ct||ex.time))/EXDUR,a=Math.max(0,1-age);if(a<=0)continue;for(const c of ex.cells){ctx.fillStyle=`rgba(255,160,50,${a*.9})`;ctx.fillRect(c.x*CELL,c.y*CELL,CELL,CELL);ctx.fillStyle=`rgba(255,240,100,${a*.5})`;ctx.fillRect(c.x*CELL+6,c.y*CELL+6,CELL-12,CELL-12)}}
   // Arena atmospheric effects
   const arId=curAr||"glacier";
-  if(arId==="volcano"&&now%300<30){ctx.save();ctx.globalAlpha=.3;for(let i=0;i<2;i++){const ex=Math.random()*GW*CELL,ey=GH*CELL-Math.random()*40;ctx.fillStyle=Math.random()>.5?"#FF6633":"#FF9944";ctx.beginPath();ctx.arc(ex,ey,1+Math.random()*2,0,Math.PI*2);ctx.fill()}ctx.restore()}
-  if(arId==="crystal"&&now%400<20){ctx.save();ctx.globalAlpha=.4;const sx=Math.random()*GW*CELL,sy=Math.random()*GH*CELL;ctx.fillStyle="#E0E0FF";ctx.beginPath();ctx.arc(sx,sy,1,0,Math.PI*2);ctx.fill();ctx.restore()}
-  if(arId==="space"&&now%500<30){ctx.save();ctx.globalAlpha=.2+Math.random()*.3;ctx.fillStyle="#FFF";ctx.beginPath();ctx.arc(Math.random()*GW*CELL,Math.random()*GH*CELL,.5+Math.random(),0,Math.PI*2);ctx.fill();ctx.restore()}
-  if(arId==="underwater"&&now%600<40){ctx.save();ctx.globalAlpha=.15;const bx=Math.random()*GW*CELL,by=GH*CELL-Math.random()*60;ctx.strokeStyle="#67E8F9";ctx.lineWidth=1;ctx.beginPath();ctx.arc(bx,by,2+Math.random()*3,0,Math.PI*2);ctx.stroke();ctx.restore()}
-  if((arId==="neon_city"||arId==="cyberpunk")&&now%250<20){ctx.save();ctx.globalAlpha=.06;ctx.fillStyle=arId==="neon_city"?"#EC4899":"#FBBF24";ctx.fillRect(0,0,GW*CELL,GH*CELL);ctx.restore()}
+  if(arId==="volcano"&&now%300<30){ctx.save();ctx.globalAlpha=.3;for(let i=0;i<2;i++){const ex=Math.random()*W,ey=H-Math.random()*40;ctx.fillStyle=Math.random()>.5?"#FF6633":"#FF9944";ctx.beginPath();ctx.arc(ex,ey,1+Math.random()*2,0,Math.PI*2);ctx.fill()}ctx.restore()}
+  if(arId==="crystal"&&now%400<20){ctx.save();ctx.globalAlpha=.4;const sx=Math.random()*W,sy=Math.random()*H;ctx.fillStyle="#E0E0FF";ctx.beginPath();ctx.arc(sx,sy,1,0,Math.PI*2);ctx.fill();ctx.restore()}
+  if(arId==="space"&&now%500<30){ctx.save();ctx.globalAlpha=.2+Math.random()*.3;ctx.fillStyle="#FFF";ctx.beginPath();ctx.arc(Math.random()*W,Math.random()*H,.5+Math.random(),0,Math.PI*2);ctx.fill();ctx.restore()}
+  if(arId==="underwater"&&now%600<40){ctx.save();ctx.globalAlpha=.15;const bx=Math.random()*W,by=H-Math.random()*60;ctx.strokeStyle="#67E8F9";ctx.lineWidth=1;ctx.beginPath();ctx.arc(bx,by,2+Math.random()*3,0,Math.PI*2);ctx.stroke();ctx.restore()}
+  if((arId==="neon_city"||arId==="cyberpunk")&&now%250<20){ctx.save();ctx.globalAlpha=.06;ctx.fillStyle=arId==="neon_city"?"#EC4899":"#FBBF24";ctx.fillRect(0,0,W,H);ctx.restore()}
   particles=particles.filter(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.03;p.life-=p.decay;if(p.life<=0)return false;ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);ctx.fill();ctx.restore();return true});
   for(const pid of["p1","p2"]){const e=ent?.[pid];if(!e||e.alive)continue;const vp=visPos[pid]||e;ctx.save();ctx.translate(vp.px,vp.py);ctx.strokeStyle="#FF4444";ctx.lineWidth=4;ctx.lineCap="round";ctx.shadowColor="#FF4444";ctx.shadowBlur=8;ctx.beginPath();ctx.moveTo(-13,-13);ctx.lineTo(13,13);ctx.moveTo(13,-13);ctx.lineTo(-13,13);ctx.stroke();ctx.shadowBlur=0;ctx.restore()}
   // Emotes
@@ -1005,7 +992,7 @@ function render(){try{const W=GW*RCELL,H=GH*RCELL,now=Date.now(),ar=AR[curAr]||A
     // Text below emoji
     ctx.font="bold 8px 'Fredoka',sans-serif";ctx.fillStyle=ed.c;ctx.fillText(ed.t||"",0,11);
     ctx.restore()}
-  ctx.restore();requestAnimationFrame(render)}catch(err){console.error("RENDER ERROR:",err);requestAnimationFrame(render)}}
+  requestAnimationFrame(render)}catch(err){console.error("RENDER ERROR:",err);requestAnimationFrame(render)}}
 requestAnimationFrame(render);
 // SNOW PARTICLES
 function initSnow(){
