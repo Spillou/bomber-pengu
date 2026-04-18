@@ -45,64 +45,46 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
 </head>
 <body>
 <!-- LANDING -->
-<div id="pg-landing"><div style="height:100vh;display:flex;flex-direction:column;background:radial-gradient(ellipse at 50% 20%,#1B4D72,#0B1E36 70%);overflow:hidden;position:relative">
+<div id="pg-landing"><div style="height:100vh;display:flex;flex-direction:column;background:radial-gradient(ellipse at 50% 30%,#1B4D72 0%,#0B1E36 70%);overflow:hidden;position:relative">
 <canvas id="landingSnow" style="position:absolute;inset:0;pointer-events:none;opacity:.25;z-index:0"></canvas>
 <!-- NAV -->
 <nav style="display:flex;align-items:center;justify-content:space-between;padding:10px 30px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;z-index:2"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:24px">🐧</span><span class="f1" style="font-size:18px;font-weight:700;letter-spacing:2px">BOMBER PENGU</span></div><button class="btn" style="padding:8px 20px;font-size:14px" onclick="go('login')">JOUER</button></nav>
-<!-- MAIN -->
-<div style="flex:1;display:flex;z-index:2;min-height:0;padding:0 20px;gap:20px">
-  <!-- LEFT: Hero -->
-  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px">
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px">
-      <div style="font-size:70px;animation:float 3s ease-in-out infinite">🐧</div>
-      <div style="font-size:48px;animation:float 2.5s .3s ease-in-out infinite">💣</div>
-      <div style="font-size:70px;animation:float 3s .6s ease-in-out infinite;transform:scaleX(-1)">🐧</div>
-    </div>
-    <h1 class="f1" style="font-size:clamp(32px,5vw,52px);font-weight:700;line-height:1.1;margin-bottom:8px">
-      <span style="background:linear-gradient(135deg,#38BDF8,#0EA5E9,#67D4FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200%;animation:shimmer 3s linear infinite">BOMBER</span>
-      <span style="color:#FFF"> PENGU</span>
-    </h1>
-    <p style="font-size:15px;color:rgba(255,255,255,.6);max-width:400px;margin:0 auto 16px;line-height:1.5">Le Bomberman multijoueur temps réel. Explose, grimpe, domine.</p>
-    <button class="btn" style="padding:14px 40px;font-size:18px;animation:pulse 2s infinite;border-radius:14px;font-weight:700;letter-spacing:1px;margin-bottom:10px" onclick="go('login')">🎮 JOUER GRATUITEMENT</button>
-    <div style="display:flex;gap:14px;font-size:11px;color:rgba(255,255,255,.4)">
-      <span>🌐 Navigateur</span><span>⚡ Temps réel</span><span>🆓 Gratuit</span>
-    </div>
-    <!-- Mini feature icons row -->
-    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center">
-      <span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;font-size:11px;color:#7A9BBF">💣 Bombes</span>
-      <span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;font-size:11px;color:#7A9BBF">⚡ Power-ups</span>
-      <span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;font-size:11px;color:#7A9BBF">👟 Kick</span>
-      <span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;font-size:11px;color:#7A9BBF">☠️ Mort subite</span>
-    </div>
+<!-- CONTENT — centered vertically -->
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2;padding:10px 30px;gap:12px;text-align:center">
+  <!-- Hero -->
+  <div style="display:flex;align-items:center;gap:18px">
+    <div style="font-size:72px;animation:float 3s ease-in-out infinite">🐧</div>
+    <div style="font-size:52px;animation:float 2.5s .3s ease-in-out infinite">💣</div>
+    <div style="font-size:72px;animation:float 3s .6s ease-in-out infinite;transform:scaleX(-1)">🐧</div>
   </div>
-  <!-- RIGHT: Features + Ranks -->
-  <div style="flex:0 0 420px;display:flex;flex-direction:column;gap:8px;justify-content:center;padding:10px 0">
-    <!-- Features 2x2 compact -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-      <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:10px;padding:14px;text-align:center"><div style="font-size:28px;margin-bottom:4px">🏆</div><div class="f1" style="font-size:13px;font-weight:700;color:#FBBF24">Ranked Bo5</div><div style="font-size:10px;color:#7A9BBF;margin-top:2px">MMR Elo, 6 rangs</div></div>
-      <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:10px;padding:14px;text-align:center"><div style="font-size:28px;margin-bottom:4px">🎨</div><div class="f1" style="font-size:13px;font-weight:700;color:#EC4899">25+ Skins</div><div style="font-size:10px;color:#7A9BBF;margin-top:2px">Chapeaux, armes, glow</div></div>
-      <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:10px;padding:14px;text-align:center"><div style="font-size:28px;margin-bottom:4px">🎫</div><div class="f1" style="font-size:13px;font-weight:700;color:#A78BFA">Battle Pass</div><div style="font-size:10px;color:#7A9BBF;margin-top:2px">25 paliers, quêtes</div></div>
-      <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:10px;padding:14px;text-align:center"><div style="font-size:28px;margin-bottom:4px">👥</div><div class="f1" style="font-size:13px;font-weight:700;color:#34D399">Social</div><div style="font-size:10px;color:#7A9BBF;margin-top:2px">Amis, chat, émotes</div></div>
-    </div>
-    <!-- Ranks row -->
-    <div style="text-align:center"><div class="f1" style="font-size:12px;color:#7A9BBF;margin-bottom:6px">🏅 Rangs compétitifs</div><div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center" id="rankShowcase"></div></div>
-    <!-- Stats row -->
-    <div style="display:flex;gap:6px;justify-content:center">
-      <div style="background:#15334D66;border:1px solid #1E4D7A;border-radius:8px;padding:8px 14px;text-align:center"><div class="f1" style="font-size:20px;font-weight:700;color:#34D399">25+</div><div style="color:#7A9BBF;font-size:9px">Skins</div></div>
-      <div style="background:#15334D66;border:1px solid #1E4D7A;border-radius:8px;padding:8px 14px;text-align:center"><div class="f1" style="font-size:20px;font-weight:700;color:#FBBF24">13</div><div style="color:#7A9BBF;font-size:9px">Arènes</div></div>
-      <div style="background:#15334D66;border:1px solid #1E4D7A;border-radius:8px;padding:8px 14px;text-align:center"><div class="f1" style="font-size:20px;font-weight:700;color:#A78BFA">20</div><div style="color:#7A9BBF;font-size:9px">Émotes</div></div>
-      <div style="background:#15334D66;border:1px solid #1E4D7A;border-radius:8px;padding:8px 14px;text-align:center"><div class="f1" style="font-size:20px;font-weight:700;color:#EC4899">27</div><div style="color:#7A9BBF;font-size:9px">Avatars</div></div>
-    </div>
-    <!-- Extra features list -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 12px">
-      <div style="display:flex;align-items:center;gap:6px;padding:4px 0"><span style="font-size:14px">📋</span><span style="color:rgba(255,255,255,.5);font-size:11px">Quêtes quotidiennes</span></div>
-      <div style="display:flex;align-items:center;gap:6px;padding:4px 0"><span style="font-size:14px">🏪</span><span style="color:rgba(255,255,255,.5);font-size:11px">Boutique rotative</span></div>
-      <div style="display:flex;align-items:center;gap:6px;padding:4px 0"><span style="font-size:14px">📰</span><span style="color:rgba(255,255,255,.5);font-size:11px">News & updates</span></div>
-      <div style="display:flex;align-items:center;gap:6px;padding:4px 0"><span style="font-size:14px">🔊</span><span style="color:rgba(255,255,255,.5);font-size:11px">Sons & effets</span></div>
-    </div>
+  <h1 class="f1" style="font-size:clamp(36px,6vw,58px);font-weight:700;line-height:1;margin:0">
+    <span style="background:linear-gradient(135deg,#38BDF8,#0EA5E9,#67D4FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200%;animation:shimmer 3s linear infinite">BOMBER</span>
+    <span style="color:#FFF"> PENGU</span>
+  </h1>
+  <p style="font-size:16px;color:rgba(255,255,255,.55);max-width:500px;margin:0;line-height:1.4">Le Bomberman multijoueur temps réel. Pose des bombes, récupère des power-ups, grimpe les rangs et deviens le Maître Pingouin.</p>
+  <button class="btn" style="padding:16px 48px;font-size:20px;animation:pulse 2s infinite;border-radius:14px;font-weight:700;letter-spacing:1px" onclick="go('login')">🎮 JOUER GRATUITEMENT</button>
+  <div style="display:flex;gap:16px;font-size:12px;color:rgba(255,255,255,.35)">
+    <span>🌐 100% navigateur</span><span>⚡ Temps réel</span><span>🆓 Gratuit</span>
+  </div>
+  <!-- Features row -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:4px;max-width:900px">
+    <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:12px;padding:16px 20px;text-align:center;flex:1;min-width:130px"><div style="font-size:30px;margin-bottom:4px">💣</div><div class="f1" style="font-size:14px;font-weight:700;color:#67D4FF">Bombes & Kick</div></div>
+    <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:12px;padding:16px 20px;text-align:center;flex:1;min-width:130px"><div style="font-size:30px;margin-bottom:4px">🏆</div><div class="f1" style="font-size:14px;font-weight:700;color:#FBBF24">Ranked Bo5</div></div>
+    <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:12px;padding:16px 20px;text-align:center;flex:1;min-width:130px"><div style="font-size:30px;margin-bottom:4px">🎨</div><div class="f1" style="font-size:14px;font-weight:700;color:#EC4899">25+ Skins</div></div>
+    <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:12px;padding:16px 20px;text-align:center;flex:1;min-width:130px"><div style="font-size:30px;margin-bottom:4px">🎫</div><div class="f1" style="font-size:14px;font-weight:700;color:#A78BFA">Battle Pass</div></div>
+    <div style="background:linear-gradient(135deg,#15334D,#1A3D5C);border:1px solid #1E4D7A;border-radius:12px;padding:16px 20px;text-align:center;flex:1;min-width:130px"><div style="font-size:30px;margin-bottom:4px">👥</div><div class="f1" style="font-size:14px;font-weight:700;color:#34D399">Social</div></div>
+  </div>
+  <!-- Ranks -->
+  <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap" id="rankShowcase"></div>
+  <!-- Stats -->
+  <div style="display:flex;gap:10px;justify-content:center">
+    <div style="background:#15334D55;border:1px solid #1E4D7A;border-radius:10px;padding:8px 16px;text-align:center"><div class="f1" style="font-size:22px;font-weight:700;color:#34D399">25+</div><div style="color:#7A9BBF;font-size:10px">Skins</div></div>
+    <div style="background:#15334D55;border:1px solid #1E4D7A;border-radius:10px;padding:8px 16px;text-align:center"><div class="f1" style="font-size:22px;font-weight:700;color:#FBBF24">13</div><div style="color:#7A9BBF;font-size:10px">Arènes</div></div>
+    <div style="background:#15334D55;border:1px solid #1E4D7A;border-radius:10px;padding:8px 16px;text-align:center"><div class="f1" style="font-size:22px;font-weight:700;color:#A78BFA">20</div><div style="color:#7A9BBF;font-size:10px">Émotes</div></div>
+    <div style="background:#15334D55;border:1px solid #1E4D7A;border-radius:10px;padding:8px 16px;text-align:center"><div class="f1" style="font-size:22px;font-weight:700;color:#EC4899">27</div><div style="color:#7A9BBF;font-size:10px">Avatars</div></div>
   </div>
 </div>
-<div style="flex-shrink:0;padding:6px;text-align:center;color:rgba(255,255,255,.12);font-size:10px;z-index:2">Bomber Pengu © 2026</div>
+<div style="flex-shrink:0;padding:6px;text-align:center;color:rgba(255,255,255,.1);font-size:10px;z-index:2">Bomber Pengu © 2026</div>
 </div></div>
 
 <!-- LOGIN -->
@@ -619,12 +601,12 @@ function renderNews(){if(!me)return;
     document.getElementById("newsC").innerHTML=`
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px"><h2 class="f1" style="font-size:22px;color:#67D4FF;margin:0">📰 NEWS</h2><button class="btn2" style="padding:8px 16px;font-size:13px" onclick="go('menu')">← RETOUR</button></div>
 ${news.length===0?'<div style="color:#7A9BBF;text-align:center;padding:60px;background:#15334D;border-radius:14px;font-size:16px">Aucune actualité pour le moment</div>':`
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">${news.map(n=>`
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">${news.map(n=>{const thumb=n.thumbnail||n.image;return`
 <div style="cursor:pointer;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'" onclick="openArticle(${n.id})">
-  <div style="aspect-ratio:1;background:${n.image?`url('${esc(n.image)}') center/cover`:'linear-gradient(135deg,#0EA5E9,#38BDF8)'};border-radius:16px;border:2px solid #1E4D7A;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:8px">${n.image?'':`<span style="font-size:36px;opacity:.6">📰</span>`}</div>
+  <div style="aspect-ratio:1;background:${thumb?`url('${esc(thumb)}') center/cover`:'linear-gradient(135deg,#0EA5E9,#38BDF8)'};border-radius:16px;border:2px solid #1E4D7A;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:8px">${thumb?'':`<span style="font-size:36px;opacity:.6">📰</span>`}</div>
   <div class="f1" style="font-size:14px;font-weight:700;color:#E8F0F8;text-align:center">${esc(n.title)}</div>
   <div style="font-size:10px;color:#7A9BBF;text-align:center;margin-top:3px" class="f1">${new Date(n.createdAt).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"})}</div>
-</div>`).join("")}</div>`}`})}
+</div>`}).join("")}</div>`}`})}
 // Open single article
 function openArticle(id){
   socket.emit("getNews",null,r=>{const news=r.news||[];const n=news.find(x=>x.id===id);if(!n)return;
@@ -669,10 +651,19 @@ function renderAdminNews(){
 <h3 class="f1" style="color:#F59E0B;font-size:15px;margin-bottom:12px">✍️ Nouvel article</h3>
 <input id="admNewsTitle" placeholder="Titre de l'article" style="width:100%;padding:10px;background:#0B1E36;border:1px solid #1E4D7A;border-radius:6px;color:#FFF;font-size:14px;margin-bottom:10px">
 <div style="margin-bottom:10px">
-  <label class="f1" style="font-size:11px;color:#7A9BBF;display:block;margin-bottom:4px">🖼️ Image d'en-tête <span style="color:#67D4FF">(recommandé : 800×800px, carré)</span></label>
+  <label class="f1" style="font-size:11px;color:#7A9BBF;display:block;margin-bottom:4px">🖼️ Miniature (aperçu dans la liste)</label>
+  <div style="display:flex;gap:8px;align-items:center">
+    <input id="admNewsThumbnail" type="hidden">
+    <button onclick="uploadThumbImg()" style="background:#10B981;color:#FFF;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700">📤 Miniature</button>
+    <div id="admThumbPreview" style="width:48px;height:48px;border-radius:8px;background:#1E4D7A;border:1px solid #1E4D7A;overflow:hidden;flex-shrink:0"></div>
+    <button onclick="document.getElementById('admNewsThumbnail').value='';document.getElementById('admThumbPreview').innerHTML=''" style="background:none;border:none;color:#7A9BBF;cursor:pointer;font-size:11px">✕ Retirer</button>
+  </div>
+</div>
+<div style="margin-bottom:10px">
+  <label class="f1" style="font-size:11px;color:#7A9BBF;display:block;margin-bottom:4px">🖼️ Image d'en-tête (affichée dans l'article)</label>
   <div style="display:flex;gap:8px;align-items:center">
     <input id="admNewsImage" type="hidden">
-    <button onclick="uploadHeaderImg()" style="background:#0EA5E9;color:#FFF;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700">📤 Upload Image</button>
+    <button onclick="uploadHeaderImg()" style="background:#0EA5E9;color:#FFF;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700">📤 En-tête</button>
     <div id="admImgPreview" style="width:48px;height:48px;border-radius:8px;background:#1E4D7A;border:1px solid #1E4D7A;overflow:hidden;flex-shrink:0"></div>
     <button onclick="document.getElementById('admNewsImage').value='';document.getElementById('admImgPreview').innerHTML=''" style="background:none;border:none;color:#7A9BBF;cursor:pointer;font-size:11px">✕ Retirer</button>
   </div>
@@ -707,7 +698,8 @@ function addLink(){const url=prompt("URL du lien:");if(url)fmt("createLink",url)
 function uploadInlineImg(){document.getElementById("imgUploadHidden").click()}
 function handleImgUpload(input){if(!input.files||!input.files[0])return;const f=input.files[0];if(f.size>2*1024*1024){alert("Image trop lourde (max 2 Mo)");return}const r=new FileReader();r.onload=e=>{document.execCommand("insertImage",false,e.target.result);document.getElementById("admNewsBody").focus()};r.readAsDataURL(f);input.value=""}
 function uploadHeaderImg(){const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.onchange=()=>{if(!inp.files||!inp.files[0])return;const f=inp.files[0];if(f.size>2*1024*1024){alert("Image trop lourde (max 2 Mo)");return}const r=new FileReader();r.onload=e=>{document.getElementById("admNewsImage").value=e.target.result;const prev=document.getElementById("admImgPreview");if(prev)prev.innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover">`};r.readAsDataURL(f)};inp.click()}
-function publishNews(){const title=document.getElementById("admNewsTitle").value.trim();const html=document.getElementById("admNewsBody").innerHTML.trim();const image=(document.getElementById("admNewsImage")?.value||"").trim();if(!title||!html){alert("Titre et contenu requis");return}socket.emit("admin_createNews",{title,html,image:image||null},r=>{if(r.error){alert(r.error);return}document.getElementById("admNewsTitle").value="";document.getElementById("admNewsBody").innerHTML="";if(document.getElementById("admNewsImage"))document.getElementById("admNewsImage").value="";renderAdminNews()})}
+function uploadThumbImg(){const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.onchange=()=>{if(!inp.files||!inp.files[0])return;const f=inp.files[0];if(f.size>2*1024*1024){alert("Image trop lourde (max 2 Mo)");return}const r=new FileReader();r.onload=e=>{document.getElementById("admNewsThumbnail").value=e.target.result;const prev=document.getElementById("admThumbPreview");if(prev)prev.innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover">`};r.readAsDataURL(f)};inp.click()}
+function publishNews(){const title=document.getElementById("admNewsTitle").value.trim();const html=document.getElementById("admNewsBody").innerHTML.trim();const image=(document.getElementById("admNewsImage")?.value||"").trim();const thumbnail=(document.getElementById("admNewsThumbnail")?.value||"").trim();if(!title||!html){alert("Titre et contenu requis");return}socket.emit("admin_createNews",{title,html,image:image||null,thumbnail:thumbnail||null},r=>{if(r.error){alert(r.error);return}document.getElementById("admNewsTitle").value="";document.getElementById("admNewsBody").innerHTML="";if(document.getElementById("admNewsImage"))document.getElementById("admNewsImage").value="";if(document.getElementById("admNewsThumbnail"))document.getElementById("admNewsThumbnail").value="";if(document.getElementById("admImgPreview"))document.getElementById("admImgPreview").innerHTML="";if(document.getElementById("admThumbPreview"))document.getElementById("admThumbPreview").innerHTML="";renderAdminNews()})}
 function deleteNews(id){if(!confirm("Supprimer cet article ?"))return;socket.emit("admin_deleteNews",{id},r=>{if(r.error){alert(r.error);return}renderAdminNews()})}
 function renderAdminReports(){
   socket.emit("admin_getReports",null,r=>{if(r.error)return;const reports=r.reports||[];const c=document.getElementById("adminTabC");if(!c)return;
@@ -849,7 +841,11 @@ socket.on("roundBegin",d=>{
 socket.on("tick",d=>{ent=d.ent;bombs=d.bombs;pups=d.pups;timer=d.timer;if(d.grid)grid=d.grid;
   // Re-stamp explosions with client time for rendering consistency
   const newExpl=d.expl||[];for(const ex of newExpl){if(!ex._ct){ex._ct=Date.now();const existing=expl.find(e=>e.bx===ex.bx&&e.by===ex.by);if(existing)ex._ct=existing._ct}}
-  expl=newExpl;emotes=d.emotes||[];const m=ent?.[myRole];if(m){stats={b:m.mB,r:m.range,s:m.spd,k:m.kick};updSt()}updSc()});
+  expl=newExpl;
+  // Restamp emote times to client clock
+  const newEmotes=d.emotes||[];for(const em of newEmotes){if(!em._ct){const existing=emotes.find(x=>x.pid===em.pid&&x.key===em.key&&x.time===em.time);em._ct=existing?existing._ct:Date.now()}}
+  emotes=newEmotes;
+  const m=ent?.[myRole];if(m){stats={b:m.mB,r:m.range,s:m.spd,k:m.kick};updSt()}updSc()});
 socket.on("explosion",d=>{sfx("explode");spawnP(d.bx*CELL+CELL/2,d.by*CELL+CELL/2,12,"#FB923C");(d.cells||[]).forEach(c=>spawnP(c.x*CELL+CELL/2,c.y*CELL+CELL/2,3,"#FBBF24"))});
 socket.on("pickup",d=>{sfx("pickup");spawnP(d.x*CELL+CELL/2,d.y*CELL+CELL/2,6,"#FCD34D")});
 socket.on("suddenDeath",()=>{sdeath=true;updSc()});
@@ -1024,10 +1020,10 @@ function render(){try{const W=GW*CELL,H=GH*CELL,now=Date.now(),ar=AR[curAr]||AR.
   particles=particles.filter(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.03;p.life-=p.decay;if(p.life<=0)return false;ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);ctx.fill();ctx.restore();return true});
   for(const pid of["p1","p2"]){const e=ent?.[pid];if(!e||e.alive)continue;const vp=visPos[pid]||e;ctx.save();ctx.translate(vp.px,vp.py);ctx.strokeStyle="#FF4444";ctx.lineWidth=4;ctx.lineCap="round";ctx.shadowColor="#FF4444";ctx.shadowBlur=8;ctx.beginPath();ctx.moveTo(-13,-13);ctx.lineTo(13,13);ctx.moveTo(13,-13);ctx.lineTo(-13,13);ctx.stroke();ctx.shadowBlur=0;ctx.restore()}
   // Emotes
-  for(const em of(emotes||[])){const e=ent?.[em.pid];if(!e)continue;const ed=EM[em.key];if(!ed)continue;const age=(now-em.time)/2500;if(age>1)continue;
+  for(const em of(emotes||[])){const e=ent?.[em.pid];if(!e)continue;const ed=EM[em.key];if(!ed)continue;const ct=em._ct||em.time;const age=(now-ct)/2500;if(age>1)continue;
     const vp=visPos[em.pid]||e;
-    const fi=Math.min(1,(now-em.time)/150),fo=age>.7?1-(age-.7)/.3:1,al=fi*fo;
-    const fy=-48-age*18,wb=Math.sin((now-em.time)/130)*2;
+    const fi=Math.min(1,(now-ct)/150),fo=age>.7?1-(age-.7)/.3:1,al=fi*fo;
+    const fy=-48-age*18,wb=Math.sin((now-ct)/130)*2;
     ctx.save();ctx.translate(vp.px+wb,vp.py+fy);ctx.globalAlpha=al;
     // Bubble background
     ctx.fillStyle="rgba(255,255,255,.96)";ctx.strokeStyle=ed.c;ctx.lineWidth=2;
