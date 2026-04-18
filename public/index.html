@@ -691,7 +691,7 @@ ${reports.length===0?'<div style="color:#7A9BBF;text-align:center;padding:30px;b
 </div>`).join("")}`})}
 
 // Admin button visibility
-function updateAdminVisibility(){setTimeout(()=>{socket.emit("admin_check",null,r=>{const b=document.getElementById("adminBtnTop");if(b)b.style.display=r.isAdmin?"inline-block":"none"})},200)}
+function updateAdminVisibility(){const b=document.getElementById("adminBtnTop");if(b){b.style.display=(me&&["YMAC","Spillou"].includes(me.username))?"inline-block":"none"}}
 
 // QUESTS
 function renderQuests(){if(!me)return;
@@ -773,7 +773,7 @@ function doAcceptMatch(){if(!curProposalId)return;socket.emit("acceptMatch",{pro
   const el=document.getElementById("acceptTimer");if(el)el.innerHTML=`<span style="color:#34D399;font-size:16px">✓ Accepté ! En attente...</span>`}
 function doDeclineMatch(){if(!curProposalId)return;socket.emit("declineMatch",{proposalId:curProposalId});curProposalId=null;if(acceptCountdown)clearInterval(acceptCountdown);go("menu")}
 
-socket.on("matchFound",d=>{if(acceptCountdown)clearInterval(acceptCountdown);curProposalId=null;myRole=d.you;opp=d.opp;curAr=d.me?.arena||"glacier";score={p1:0,p2:0};roundNum=0;stats={b:1,r:2,s:1,k:false};drawUsed=false;go("game");updDrawBtn();buildEmoteBar()});
+socket.on("matchFound",d=>{if(acceptCountdown)clearInterval(acceptCountdown);curProposalId=null;myRole=d.you;opp=d.opp;curAr=d.me?.arena||"glacier";score={p1:0,p2:0};roundNum=0;stats={b:1,r:2,s:1,k:false};drawUsed=false;grid=null;ent=null;bombs=[];pups=[];expl=[];emotes=[];particles=[];go("game");updSc();updDrawBtn();buildEmoteBar()});
 socket.on("roundStart",d=>{roundNum=d.round;curAr=d.arena||"glacier";if(d.sc)score=d.sc;
   if(d.round===1){
     // VS ANIMATION for first round
