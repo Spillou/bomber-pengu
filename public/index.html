@@ -120,7 +120,10 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
       <button class="menu-btn" style="background:linear-gradient(135deg,#F97316,#FB923C);flex:1" onclick="go('quests')">📋 Quêtes</button>
       <button class="menu-btn" style="background:linear-gradient(135deg,#EC4899,#F472B6);flex:1;position:relative" onclick="go('friends')">👥 Amis<span id="friendBadge" style="display:none;position:absolute;top:8px;right:10px;background:#EF4444;color:#FFF;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px">!</span></button>
     </div>
-    <button class="menu-btn" style="background:linear-gradient(135deg,#6366F1,#818CF8);animation:menuBtnIn .4s .3s both" onclick="go('pass')">🎫 Passe de Combat</button>
+    <div style="display:flex;gap:6px;animation:menuBtnIn .4s .28s both">
+      <button class="menu-btn" style="background:linear-gradient(135deg,#6366F1,#818CF8);flex:1" onclick="go('pass')">🎫 Passe de Combat</button>
+      <button class="menu-btn" style="background:linear-gradient(135deg,#14B8A6,#2DD4BF);flex:1" onclick="go('spectate')">👁️ Spectateur</button>
+    </div>
     <button class="menu-btn" style="background:linear-gradient(135deg,#0EA5E9,#38BDF8);box-shadow:0 4px 24px rgba(14,165,233,.5);animation:menuBtnIn .4s .35s both,pulse 2s infinite;font-size:20px;padding:18px;letter-spacing:1px" onclick="findMatch()">⚔️ JOUER</button>
   </div>
   <div id="onlineInd" style="color:#34D399;font-size:10px;text-align:center;flex-shrink:0" class="f1"></div>
@@ -158,6 +161,8 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
 <div id="pg-quests" class="page hidden" style="align-items:flex-start;padding:24px"><div style="max-width:700px;width:100%;margin:0 auto" id="questsC"></div></div>
 <!-- FRIENDS -->
 <div id="pg-friends" class="page hidden" style="align-items:flex-start;padding:24px"><div style="max-width:700px;width:100%;margin:0 auto" id="friendsC"></div></div>
+<!-- SPECTATE -->
+<div id="pg-spectate" class="page hidden" style="align-items:flex-start;padding:24px"><div style="max-width:700px;width:100%;margin:0 auto" id="spectateC"></div></div>
 
 <!-- GAME — bigger layout, emotes+chat below -->
 <div id="pg-game" class="hidden" style="height:100vh;max-height:100vh;display:flex;flex-direction:column;background:radial-gradient(ellipse at 50% 30%,#15334D,#0B1E36);overflow:hidden">
@@ -374,12 +379,12 @@ socket.on("onlineCount",n=>{onlineCnt=n;const el=document.getElementById("online
 
 // PAGES
 let profileTarget=null;
-const PGS=["landing","login","menu","queue","accept","shop","profile","lb","pass","cosmetics","news","admin","quests","friends","game"];
+const PGS=["landing","login","menu","queue","accept","shop","profile","lb","pass","cosmetics","news","admin","quests","friends","spectate","game"];
 function go(p){PGS.forEach(id=>{const el=document.getElementById("pg-"+id);if(el)el.classList.add("hidden")});const el=document.getElementById("pg-"+p);if(el)el.classList.remove("hidden");
   const noScroll=["game","menu","queue","accept"];
   document.body.style.overflow=noScroll.includes(p)?"hidden":"auto";
   document.body.style.height=noScroll.includes(p)?"100vh":"auto";
-  if(p==="menu"){renderMenu();loadGC();loadLB();checkUnreadNews()}if(p==="shop")renderShop();if(p==="profile")renderProf(profileTarget||me);if(p==="lb")loadLB();if(p==="pass")renderPass();if(p==="cosmetics")renderCosmetics();if(p==="news")renderNews();if(p==="admin")renderAdmin();if(p==="quests")renderQuests();if(p==="friends")renderFriends()}
+  if(p==="menu"){renderMenu();loadGC();loadLB();checkUnreadNews()}if(p==="shop")renderShop();if(p==="profile")renderProf(profileTarget||me);if(p==="lb")loadLB();if(p==="pass")renderPass();if(p==="cosmetics")renderCosmetics();if(p==="news")renderNews();if(p==="admin")renderAdmin();if(p==="quests")renderQuests();if(p==="friends")renderFriends();if(p==="spectate")renderSpectate()}
 
 function setTab(r){isReg=!!r;document.getElementById("tabL").style.background=r?"transparent":"#0EA5E9";document.getElementById("tabL").style.color=r?"#7A9BBF":"#FFF";document.getElementById("tabR").style.background=r?"#0EA5E9":"transparent";document.getElementById("tabR").style.color=r?"#FFF":"#7A9BBF";document.getElementById("authBtn").textContent=r?"CRÉER MON COMPTE":"JOUER"}
 function checkRejoin(){socket.emit("rejoinGame",null,r=>{if(r&&r.found){
@@ -642,7 +647,7 @@ function renderAdminNews(){
 <h3 class="f1" style="color:#F59E0B;font-size:15px;margin-bottom:12px">✍️ Nouvel article</h3>
 <input id="admNewsTitle" placeholder="Titre de l'article" style="width:100%;padding:10px;background:#0B1E36;border:1px solid #1E4D7A;border-radius:6px;color:#FFF;font-size:14px;margin-bottom:10px">
 <div style="margin-bottom:10px">
-  <label class="f1" style="font-size:11px;color:#7A9BBF;display:block;margin-bottom:4px">🖼️ Miniature (aperçu dans la liste)</label>
+  <label class="f1" style="font-size:11px;color:#7A9BBF;display:block;margin-bottom:4px">🖼️ Miniature <span style="color:#67D4FF">(300×300px, carré)</span></label>
   <div style="display:flex;gap:8px;align-items:center">
     <input id="admNewsThumbnail" type="hidden">
     <button onclick="uploadThumbImg()" style="background:#10B981;color:#FFF;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700">📤 Miniature</button>
@@ -651,7 +656,7 @@ function renderAdminNews(){
   </div>
 </div>
 <div style="margin-bottom:10px">
-  <label class="f1" style="font-size:11px;color:#7A9BBF;display:block;margin-bottom:4px">🖼️ Image d'en-tête (affichée dans l'article)</label>
+  <label class="f1" style="font-size:11px;color:#7A9BBF;display:block;margin-bottom:4px">🖼️ En-tête <span style="color:#67D4FF">(1200×400px, bannière)</span></label>
   <div style="display:flex;gap:8px;align-items:center">
     <input id="admNewsImage" type="hidden">
     <button onclick="uploadHeaderImg()" style="background:#0EA5E9;color:#FFF;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700">📤 En-tête</button>
@@ -756,6 +761,62 @@ function acceptFR(u){socket.emit("acceptFriend",{from:u},r=>{if(r.error){alert(r
 function declineFR(u){socket.emit("declineFriend",{from:u},r=>{if(r.error){alert(r.error);return}renderFriends()})}
 function removeFR(u){if(!confirm(`Retirer ${u} de tes amis ?`))return;socket.emit("removeFriend",{target:u},r=>{if(r.error){alert(r.error);return}renderFriends()})}
 socket.on("friendRequest",d=>{/* Could show notification */})
+
+// SPECTATE
+let isSpectating=false,specInterval=null;
+function renderSpectate(){
+  socket.emit("getLiveMatches",null,r=>{const matches=r.matches||[];
+    document.getElementById("spectateC").innerHTML=`
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><h2 class="f1" style="font-size:22px;color:#14B8A6;margin:0">👁️ MATCHS EN COURS</h2><button class="btn2" style="padding:8px 16px;font-size:13px" onclick="go('menu')">← RETOUR</button></div>
+${matches.length===0?'<div style="color:#7A9BBF;text-align:center;padding:40px;background:#15334D;border-radius:14px;font-size:15px">Aucun match en cours. Reviens plus tard !</div>':`
+<div style="display:flex;flex-direction:column;gap:10px">${matches.map(m=>{
+  const rk1=gR(m.p1.lp);const rk2=gR(m.p2.lp);
+  return`<div style="background:#15334D;border:1px solid #1E4D7A;border-radius:14px;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform .15s" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'" onclick="joinSpectate('${m.gid}')">
+  <div style="flex:1;text-align:center">
+    <div style="font-size:24px;margin-bottom:4px">${renderAvatar(m.p1.avatar,24)}</div>
+    <div style="font-weight:700;font-size:14px">${esc(m.p1.name)}</div>
+    ${rankBadge(rk1,"small")}
+  </div>
+  <div style="text-align:center;padding:0 10px">
+    <div style="color:#FBBF24;font-size:22px;font-weight:700" class="f1">${m.score.p1} - ${m.score.p2}</div>
+    <div style="font-size:11px;color:#7A9BBF" class="f1">Round ${m.round}</div>
+    <div style="font-size:10px;color:#14B8A6;margin-top:4px" class="f1">👁️ Regarder</div>
+  </div>
+  <div style="flex:1;text-align:center">
+    <div style="font-size:24px;margin-bottom:4px">${renderAvatar(m.p2.avatar,24)}</div>
+    <div style="font-weight:700;font-size:14px">${esc(m.p2.name)}</div>
+    ${rankBadge(rk2,"small")}
+  </div>
+</div>`}).join("")}</div>`}`;
+  })}
+function joinSpectate(gid){
+  socket.emit("spectateMatch",{gid},r=>{if(r.error){alert(r.error);return}
+    isSpectating=true;myRole="p1";
+    opp={username:r.p2.name,lp:r.p2.lp,avatar:r.p2.avatar,skin:r.p2.skin,arena:r.p2.arena};
+    me={...me,skin:r.p1.skin,arena:r.p1.arena};
+    curAr=r.arena||"glacier";score=r.score;roundNum=r.round;
+    grid=r.grid;ent=r.ent;
+    if(ent)visPos={p1:{px:ent.p1.px,py:ent.p1.py},p2:{px:ent.p2.px,py:ent.p2.py}};
+    bombs=[];pups=[];expl=[];emotes=[];particles=[];
+    go("game");setTimeout(resizeGame,50);updSc();hideOv();
+    // Show spectating banner
+    showOv(`<div class="f1" style="font-size:16px;color:#14B8A6;animation:fadeUp .5s both">👁️ MODE SPECTATEUR</div><div class="f1" style="font-size:14px;color:#7A9BBF;margin-top:4px">${esc(r.p1.name)} vs ${esc(r.p2.name)}</div>`);
+    setTimeout(hideOv,2000);
+  })}
+function leaveSpectate(){isSpectating=false;socket.emit("leaveSpectate");go("menu")}
+socket.on("specTick",d=>{if(!isSpectating)return;ent=d.ent;bombs=d.bombs;pups=d.pups;timer=d.timer;if(d.grid)grid=d.grid;
+  const newExpl=d.expl||[];for(const ex of newExpl){if(!ex._ct){ex._ct=Date.now();const existing=expl.find(e=>e.bx===ex.bx&&e.by===ex.by);if(existing)ex._ct=existing._ct}}
+  expl=newExpl;
+  const newEmotes=d.emotes||[];for(const em of newEmotes){if(!em._ct){const existing=emotes.find(x=>x.pid===em.pid&&x.key===em.key&&x.time===em.time);em._ct=existing?existing._ct:Date.now()}}
+  emotes=newEmotes;updSc()});
+socket.on("specRoundEnd",d=>{if(!isSpectating)return;score=d.sc;
+  const w=d.winner;showOv(`<div class="f1" style="font-size:30px;color:${w==="p1"?"#34D399":w==="p2"?"#F87171":"#FBBF24"}">${w==="draw"?"ÉGALITÉ":"ROUND GAGNÉ par "+esc(w==="p1"?opp?.username||"J1":"J2")}</div>`)});
+socket.on("specMatchEnd",d=>{if(!isSpectating)return;
+  showOv(`<div style="font-size:48px">${d.result==="draw"?"🤝":"🏆"}</div><div class="f1" style="font-size:24px;color:#FBBF24;margin-top:8px">MATCH TERMINÉ</div><div class="f1" style="font-size:18px;color:#7A9BBF;margin-top:4px">${d.score.p1} - ${d.score.p2}</div><button class="btn" style="margin-top:14px;padding:12px 30px" onclick="leaveSpectate()">RETOUR AU LOBBY</button>`)});
+socket.on("specRoundStart",d=>{if(!isSpectating)return;roundNum=d.round;curAr=d.arena||"glacier";score=d.sc||score;
+  showOv(`<div class="f1" style="font-size:18px;color:#7A9BBF;letter-spacing:4px;margin-bottom:8px">ROUND ${d.round}</div>`)});
+socket.on("specRoundBegin",d=>{if(!isSpectating)return;grid=d.grid;ent=d.ent;bombs=[];pups=[];expl=[];emotes=[];
+  if(ent)visPos={p1:{px:ent.p1.px,py:ent.p1.py},p2:{px:ent.p2.px,py:ent.p2.py}};hideOv()})
 
 // MATCHMAKING
 function findMatch(){socket.emit("findMatch",{username:me.username,lp:me.lp||0});go("queue")}
@@ -873,12 +934,15 @@ function proposeDraw(){if(drawUsed)return;drawUsed=true;socket.emit("proposeDraw
 function respondDraw(accept){document.getElementById("drawPopup").classList.add("hidden");socket.emit("respondDraw",{accept})}
 function updDrawBtn(){const el=document.getElementById("drawBtn");if(!el)return;el.innerHTML=drawUsed?"":`<button class="btn2" style="padding:6px 10px;font-size:10px;white-space:nowrap" onclick="proposeDraw()">🤝 Nul?</button>`}
 
-function backLobby(){stopMv();socket.emit("login",{username:me.username,password:myPass},r=>{if(r.user)me=r.user;go("menu")})}
+function backLobby(){stopMv();if(isSpectating){leaveSpectate();return}socket.emit("login",{username:me.username,password:myPass},r=>{if(r.user)me=r.user;go("menu")})}
 function sendIG(){const i=document.getElementById("igCI");if(i&&i.value.trim())socket.emit("gameChat",{message:i.value.trim()});if(i)i.value=""}
 function showOv(h){const o=document.getElementById("ov");o.innerHTML=h;o.classList.remove("hidden")}
 function hideOv(){document.getElementById("ov").classList.add("hidden")}
 
-function updSc(){const oR=myRole==="p1"?"p2":"p1";const tc=timer<=10?"#EF4444":timer<=30?"#FBBF24":"#E8F0F8";const mRk=gR(me?.lp);const oRk=gR(opp?.lp);
+function updSc(){const oR=myRole==="p1"?"p2":"p1";const tc=timer<=10?"#EF4444":timer<=30?"#FBBF24":"#E8F0F8";
+  // For spectator, show both players neutrally
+  const p1Name=isSpectating?(opp?.username||"J2"):me?.username;const p2Name=isSpectating?"J2":(opp?.username||"");
+  const mRk=isSpectating?gR(0):gR(me?.lp);const oRk=gR(opp?.lp);
   document.getElementById("scBar").innerHTML=`<div style="text-align:center"><div style="color:#67D4FF;font-weight:700;font-size:14px" class="f1">${avatarEmoji(me?.avatar)} ${esc(me?.username||"")}</div>${rankBadge(mRk,"small")}</div><div style="display:flex;gap:5px">${[0,1,2].map(i=>`<div class="dot" style="background:${score[myRole]>i?"#34D399":"#1E4D7A"};box-shadow:${score[myRole]>i?"0 0 8px #34D399":"none"}"></div>`).join("")}</div><div style="text-align:center;padding:2px 14px;background:${sdeath?"rgba(239,68,68,.15)":"rgba(255,255,255,.05)"};border-radius:6px;border:1px solid ${sdeath?"#EF4444":"#1E4D7A"}">${sdeath?'<div style="font-size:9px;color:#EF4444;font-weight:700" class="f1">☠️ MORT SUBITE</div>':""}<div style="font-size:${sdeath?16:20}px;font-weight:700;color:${tc};letter-spacing:2px" class="f1">${fmtT(timer)}</div></div><div style="display:flex;gap:5px">${[0,1,2].map(i=>`<div class="dot" style="background:${score[oR]>i?"#F87171":"#1E4D7A"};box-shadow:${score[oR]>i?"0 0 8px #F87171":"none"}"></div>`).join("")}</div><div style="text-align:center;cursor:pointer" onclick="if(opp)viewU(opp.username)"><div style="color:#F87171;font-weight:700;font-size:14px" class="f1">${avatarEmoji(opp?.avatar)} ${esc(opp?.username||"")}</div>${rankBadge(oRk,"small")}</div>`}
 function updSt(){document.getElementById("stBar").innerHTML=[{i:"💣",l:"Bombes",v:stats.b,c:"#FB923C"},{i:"🔥",l:"Portée",v:stats.r,c:"#EF4444"},{i:"⚡",l:"Vitesse",v:stats.s,c:"#FBBF24"}].map(s=>`<div style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:rgba(255,255,255,.05);border-radius:5px"><span style="font-size:14px">${s.i}</span><div><div style="font-size:8px;color:#7A9BBF" class="f1">${s.l}</div><div style="font-size:14px;font-weight:700;color:${s.c}" class="f1">${s.v}</div></div></div>`).join("")+(stats.k?'<div style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:rgba(52,211,153,.1);border-radius:5px;border:1px solid rgba(52,211,153,.3)"><span style="font-size:14px">👟</span><div class="f1" style="font-size:10px;font-weight:700;color:#34D399">KICK</div></div>':"")}
 
