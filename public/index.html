@@ -941,7 +941,7 @@ function sfx(type){if(!sfxOn||sfxVol<=0)return;try{const ac=getAC();const g=getM
     const o=ac.createOscillator();o.type="sine";o.frequency.setValueAtTime(200,ac.currentTime);o.frequency.exponentialRampToValueAtTime(80,ac.currentTime+.12);g.gain.setValueAtTime(.1,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.12);o.connect(g);o.start();o.stop(ac.currentTime+.15)}
 }catch(e){}}
 
-function render(){const W=GW*CELL,H=GH*CELL,now=Date.now(),ar=AR[curAr]||AR.glacier;
+function render(){try{const W=GW*CELL,H=GH*CELL,now=Date.now(),ar=AR[curAr]||AR.glacier;
   ctx.clearRect(0,0,W,H);
   // Draw floor background always
   ctx.fillStyle=ar.f1;ctx.fillRect(0,0,W,H);
@@ -1002,7 +1002,7 @@ function render(){const W=GW*CELL,H=GH*CELL,now=Date.now(),ar=AR[curAr]||AR.glac
     // Text below emoji
     ctx.font="bold 8px 'Fredoka',sans-serif";ctx.fillStyle=ed.c;ctx.fillText(ed.t||"",0,11);
     ctx.restore()}
-  requestAnimationFrame(render)}
+  requestAnimationFrame(render)}catch(err){console.error("RENDER ERROR:",err);requestAnimationFrame(render)}}
 requestAnimationFrame(render);
 // SNOW PARTICLES
 function initSnow(){
