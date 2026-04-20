@@ -242,29 +242,29 @@ function getTier(seasonXP){let t=0,remaining=seasonXP;while(t<25&&remaining>=tie
 const SEASON_REWARDS=[
   {tier:1,type:"flocons",value:50,free:true},
   {tier:2,type:"emote",value:"10",free:false},
-  {tier:3,type:"flocons",value:80,free:true},
+  {tier:3,type:"flocons",value:50,free:true},
   {tier:4,type:"skin",value:"captain",free:false},
-  {tier:5,type:"flocons",value:100,free:true},
+  {tier:5,type:"emote",value:"5",free:true},
   {tier:6,type:"avatar",value:"penguin_cool",free:false},
-  {tier:7,type:"flocons",value:120,free:true},
+  {tier:7,type:"flocons",value:75,free:true},
   {tier:8,type:"arena",value:"underwater",free:false},
   {tier:9,type:"skin",value:"military",free:true},
   {tier:10,type:"emote",value:"13",free:false},
-  {tier:11,type:"flocons",value:150,free:true},
+  {tier:11,type:"flocons",value:75,free:true},
   {tier:12,type:"avatar",value:"dragon_baby",free:false},
-  {tier:13,type:"flocons",value:200,free:true},
+  {tier:13,type:"skin",value:"cowboy",free:true},
   {tier:14,type:"arena",value:"cyberpunk",free:false},
-  {tier:15,type:"skin",value:"samurai",free:true},
+  {tier:15,type:"flocons",value:100,free:true},
   {tier:16,type:"emote",value:"20",free:false},
-  {tier:17,type:"flocons",value:250,free:true},
+  {tier:17,type:"skin",value:"samurai",free:true},
   {tier:18,type:"skin",value:"ninja",free:false},
-  {tier:19,type:"flocons",value:300,free:true},
+  {tier:19,type:"flocons",value:100,free:true},
   {tier:20,type:"avatar",value:"dragon",free:false},
   {tier:21,type:"arena",value:"neon_city",free:true},
   {tier:22,type:"skin",value:"cyber",free:false},
-  {tier:23,type:"flocons",value:500,free:true},
+  {tier:23,type:"flocons",value:200,free:true},
   {tier:24,type:"emote",value:"19",free:false},
-  {tier:25,type:"skin",value:"rainbow",free:true},
+  {tier:25,type:"flocons",value:300,free:true},
 ];
 function rN(lp){if(lp>=2000)return"Maître";const t=Math.min(4,Math.floor(lp/400));return`${TN[t]} ${4-Math.floor((lp-t*400)/100)}`}
 function rC(lp){if(lp>=2000)return TC[5];return TC[Math.min(4,Math.floor(lp/400))]}
@@ -411,7 +411,28 @@ function gameTick(gid){const g=games.get(gid);if(!g||g.phase!=="play")return;con
   if(rem<=0&&!g.sd){g.sd=true;g.sdL=now;bc(g,"suddenDeath",{})}
   if(g.sd&&g.sdI<g.sdO.length&&now-g.sdL>=SDI){const c=g.sdO[g.sdI];if(g.grid[c.y][c.x]!==T.W){g.grid[c.y][c.x]=T.W;g.pups=g.pups.filter(p=>!(p.x===c.x&&p.y===c.y));for(const pid of["p1","p2"]){const e=g.ent[pid];if(e.alive&&e.gx===c.x&&e.gy===c.y)e.alive=false}bc(g,"wallPlace",{x:c.x,y:c.y})}g.sdI++;g.sdL=now}
   for(const b of[...g.bombs])if(now>=b.timer)explode(g,b);
-  for(const kb of[...g.kicked]){const bomb=g.bombs.find(b=>b.id===kb.id);if(!bomb){g.kicked=g.kicked.filter(k=>k.id!==kb.id);continue}const tpx=kb.tx*CELL+CELL/2,tpy=kb.ty*CELL+CELL/2;const ddx=tpx-bomb.px,ddy=tpy-bomb.py;if(Math.abs(ddx)<KICK_SPD&&Math.abs(ddy)<KICK_SPD){bomb.px=tpx;bomb.py=tpy;bomb.gx=kb.tx;bomb.gy=kb.ty;g.kicked=g.kicked.filter(k=>k.id!==kb.id)}else{bomb.px+=Math.sign(ddx)*Math.min(KICK_SPD,Math.abs(ddx));bomb.py+=Math.sign(ddy)*Math.min(KICK_SPD,Math.abs(ddy));bomb.gx=Math.floor(bomb.px/CELL);bomb.gy=Math.floor(bomb.py/CELL);const nx=bomb.gx+kb.dx,ny=bomb.gy+kb.dy;if(nx<0||nx>=GW||ny<0||ny>=GH||g.grid[ny][nx]!==T.E||g.bombs.some(ob=>ob.id!==bomb.id&&ob.gx===nx&&ob.gy===ny)){bomb.px=bomb.gx*CELL+CELL/2;bomb.py=bomb.gy*CELL+CELL/2;g.kicked=g.kicked.filter(k=>k.id!==kb.id)}}}
+  for(const kb of[...g.kicked]){const bomb=g.bombs.find(b=>b.id===kb.id);if(!bomb){g.kicked=g.kicked.filter(k=>k.id!==kb.id);continue}const tpx=kb.tx*CELL+CELL/2,tpy=kb.ty*CELL+CELL/2;const ddx=tpx-bomb.px,ddy=tpy-bomb.py;
+    // Check if bomb hits a player while moving
+    for(const pid of["p1","p2"]){const e=g.ent[pid];if(!e.alive)continue;const dist=Math.abs(e.px-bomb.px)+Math.abs(e.py-bomb.py);if(dist<CELL*0.8&&e.gx===bomb.gx&&e.gy===bomb.gy){
+      if(e.kick){// Counter-kick: reverse the bomb direction
+        const rdx=-kb.dx,rdy=-kb.dy;let fx=bomb.gx,fy=bomb.gy;
+        while(true){const nnx=fx+rdx,nny=fy+rdy;if(nnx<0||nnx>=GW||nny<0||nny>=GH||g.grid[nny][nnx]!==T.E)break;
+          const otherBlock=g.bombs.some(ob=>{if(ob.id===bomb.id)return false;return ob.gx===nnx&&ob.gy===nny});if(otherBlock)break;fx=nnx;fy=nny}
+        g.kicked=g.kicked.filter(k=>k.id!==kb.id);
+        if(fx!==bomb.gx||fy!==bomb.gy)g.kicked.push({id:bomb.id,tx:fx,ty:fy,dx:rdx,dy:rdy});
+      }else{// Push player back in bomb direction until obstacle
+        let px=e.gx,py=e.gy;
+        while(true){const nnx=px+kb.dx,nny=py+kb.dy;
+          if(nnx<0||nnx>=GW||nny<0||nny>=GH||g.grid[nny][nnx]!==T.E)break;
+          if(g.bombs.some(b=>b.gx===nnx&&b.gy===nny))break;
+          px=nnx;py=nny}
+        e.px=px*CELL+CELL/2;e.py=py*CELL+CELL/2;e.gx=px;e.gy=py;
+        // Stop the bomb where the player was
+        bomb.px=bomb.gx*CELL+CELL/2;bomb.py=bomb.gy*CELL+CELL/2;
+        g.kicked=g.kicked.filter(k=>k.id!==kb.id);
+      }break}}
+    if(!g.kicked.some(k=>k.id===kb.id&&k.dx===kb.dx&&k.dy===kb.dy))continue;
+    if(Math.abs(ddx)<KICK_SPD&&Math.abs(ddy)<KICK_SPD){bomb.px=tpx;bomb.py=tpy;bomb.gx=kb.tx;bomb.gy=kb.ty;g.kicked=g.kicked.filter(k=>k.id!==kb.id)}else{bomb.px+=Math.sign(ddx)*Math.min(KICK_SPD,Math.abs(ddx));bomb.py+=Math.sign(ddy)*Math.min(KICK_SPD,Math.abs(ddy));bomb.gx=Math.floor(bomb.px/CELL);bomb.gy=Math.floor(bomb.py/CELL);const nx=bomb.gx+kb.dx,ny=bomb.gy+kb.dy;if(nx<0||nx>=GW||ny<0||ny>=GH||g.grid[ny][nx]!==T.E||g.bombs.some(ob=>ob.id!==bomb.id&&ob.gx===nx&&ob.gy===ny)){bomb.px=bomb.gx*CELL+CELL/2;bomb.py=bomb.gy*CELL+CELL/2;g.kicked=g.kicked.filter(k=>k.id!==kb.id)}}}
   g.expl=g.expl.filter(e=>now-e.time<EXDUR);for(const ex of g.expl)for(const c of ex.cells){for(const pid of["p1","p2"]){const e=g.ent[pid];if(e.alive&&e.gx===c.x&&e.gy===c.y)e.alive=false}}
   if(!g.ent.p1.alive||!g.ent.p2.alive){let w="draw";if(!g.ent.p1.alive&&g.ent.p2.alive)w="p2";if(g.ent.p1.alive&&!g.ent.p2.alive)w="p1";endRound(gid,w);return}
   const tickData={ent:sE(g.ent),bombs:g.bombs.map(b=>({gx:b.gx,gy:b.gy,px:b.px,py:b.py,timer:b.timer,id:b.id,owner:b.owner,range:b.range})),pups:g.pups,expl:g.expl.map(e=>({cells:e.cells,time:e.time})),grid:g.grid,timer:rem,emotes:g.emotes};
@@ -539,7 +560,7 @@ io.on("connection",sock=>{
     else if(r.type==="emote"&&!(u.ownedEmotes||[]).includes(r.value)){if(!u.ownedEmotes)u.ownedEmotes=["1","2","3","4"];u.ownedEmotes.push(r.value)}
     else if(r.type==="avatar"){if(!u.ownedAvatars)u.ownedAvatars=["penguin","polar","seal"];if(!u.ownedAvatars.includes(r.value))u.ownedAvatars.push(r.value)}
     u.seasonData[sid].claimed.push(tier);pU(u);cb({user:safeUser(u)})});
-  sock.on("buyBattlePass",(_,cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}const PASS_PRICE=500;if((u.flocons||0)<PASS_PRICE){cb({error:"Pas assez de Flocons"});return}const sid=getSeasonId();if(!u.seasonData)u.seasonData={};if(!u.seasonData[sid])u.seasonData[sid]={xp:0,claimed:[],hasPass:false};if(u.seasonData[sid].hasPass){cb({error:"Passe déjà acheté"});return}u.flocons-=PASS_PRICE;u.seasonData[sid].hasPass=true;pU(u);cb({user:safeUser(u)})});
+  sock.on("buyBattlePass",(_,cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}const PASS_PRICE=950;if((u.flocons||0)<PASS_PRICE){cb({error:"Pas assez de Flocons"});return}const sid=getSeasonId();if(!u.seasonData)u.seasonData={};if(!u.seasonData[sid])u.seasonData[sid]={xp:0,claimed:[],hasPass:false};if(u.seasonData[sid].hasPass){cb({error:"Passe déjà acheté"});return}u.flocons-=PASS_PRICE;u.seasonData[sid].hasPass=true;pU(u);cb({user:safeUser(u)})});
   sock.on("getQuests",(_,cb)=>{const u=gU(sock.data?.username);if(!u){cb({error:"Non connecté"});return}
     const q=getUserQuests(u);const defs=getDailyQuests();const endMs=getShopEndMs();
     cb({quests:defs.map(d=>({...d,progress:q.progress[d.stat]||0,claimed:q.claimed.includes(d.id)})),endMs})});
