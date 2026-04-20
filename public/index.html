@@ -75,7 +75,7 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
   <!-- Ranks -->
   <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap" id="rankShowcase"></div>
 </div>
-<div style="flex-shrink:0;padding:6px;text-align:center;color:rgba(255,255,255,.1);font-size:10px;z-index:2">Bomber Rivals © 2026</div>
+<div style="flex-shrink:0;padding:6px;text-align:center;color:rgba(255,255,255,.15);font-size:10px;z-index:2">Bomber Rivals © 2026 — <a href="#" onclick="event.preventDefault();go('cgu')" style="color:rgba(255,255,255,.25);text-decoration:underline">CGU</a> · <a href="#" onclick="event.preventDefault();go('legal')" style="color:rgba(255,255,255,.25);text-decoration:underline">Mentions légales</a></div>
 </div></div>
 
 <!-- LOGIN -->
@@ -207,6 +207,90 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
   <button class="mobBtn" id="mobBomb" ontouchstart="sfx('bomb');socket.emit('bomb')" style="position:absolute;bottom:40px;right:30px;width:80px;height:80px;border-radius:50%;font-size:32px;pointer-events:auto;background:rgba(239,68,68,.3);border-color:#EF4444">💣</button>
 </div>
 </div>
+
+<!-- CGU -->
+<div id="pg-cgu" class="page hidden" style="align-items:flex-start;padding:24px;overflow-y:auto">
+<div style="max-width:800px;width:100%;margin:0 auto">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><h2 class="f1" style="font-size:22px;color:#67D4FF;margin:0">📋 CONDITIONS GÉNÉRALES D'UTILISATION</h2><button class="btn2" style="padding:8px 16px;font-size:13px" onclick="go('landing')">← RETOUR</button></div>
+<div style="background:#15334D;border:1px solid #1E4D7A;border-radius:14px;padding:28px;color:#C8D6E5;font-size:14px;line-height:1.8">
+<p style="color:#7A9BBF;font-size:12px;margin-bottom:16px">Dernière mise à jour : 20 avril 2026</p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">1. Objet</h3>
+<p>Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation du jeu en ligne <b style="color:#FFF">Bomber Rivals</b>, accessible à l'adresse <b style="color:#FFF">https://bomber-rivals.com</b>. En accédant au site et en créant un compte, l'utilisateur accepte sans réserve les présentes CGU.</p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">2. Description du service</h3>
+<p>Bomber Rivals est un jeu multijoueur en ligne gratuit de type Bomberman, jouable directement dans le navigateur. Le jeu propose un mode ranked compétitif, des cosmétiques (skins, arènes, émotes, avatars), un système de progression (battle pass, quêtes, niveaux), et des fonctionnalités sociales (chat, amis, profils).</p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">3. Inscription et compte</h3>
+<p>L'utilisateur doit créer un compte avec un pseudonyme et un mot de passe. Le pseudonyme ne doit pas être injurieux, discriminatoire, ou usurper l'identité d'un tiers. L'utilisateur est responsable de la confidentialité de ses identifiants. Les mots de passe sont hashés (bcrypt) et ne sont jamais stockés en clair.</p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">4. Monnaie virtuelle (Flocons)</h3>
+<p>Les Flocons (❄️) sont la monnaie virtuelle du jeu, permettant d'acheter des cosmétiques. Les Flocons peuvent être obtenus gratuitement via la progression en jeu (quêtes, battle pass) ou achetés contre de l'argent réel. Les Flocons achetés sont non remboursables, sauf dans les cas prévus par la loi (droit de rétractation de 14 jours si non utilisés). Les Flocons n'ont aucune valeur monétaire réelle et ne peuvent être échangés contre de l'argent. Les cosmétiques achetés sont purement visuels et ne confèrent aucun avantage compétitif.</p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">5. Règles de conduite</h3>
+<p>L'utilisateur s'engage à ne pas :</p>
+<p>• Utiliser de logiciels de triche, bots, ou exploits<br>• Harceler, insulter ou menacer d'autres joueurs<br>• Usurper l'identité d'un autre joueur ou d'un administrateur<br>• Tenter de perturber le fonctionnement du serveur<br>• Créer plusieurs comptes dans le but de manipuler le classement<br>• Partager du contenu illégal, inapproprié ou offensant via le chat</p>
+<p>Le non-respect de ces règles peut entraîner un avertissement, une suspension temporaire, ou un bannissement définitif du compte, à la discrétion des administrateurs.</p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">6. Propriété intellectuelle</h3>
+<p>L'ensemble du contenu de Bomber Rivals (code, graphismes, sons, textes, design) est la propriété de son créateur. Toute reproduction, distribution ou modification non autorisée est interdite. Le nom "Bomber Rivals" et le logo associé sont propriété de l'éditeur.</p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">7. Données personnelles</h3>
+<p>Les seules données collectées sont le pseudonyme, le mot de passe hashé, et les statistiques de jeu. Aucune donnée personnelle sensible (nom réel, email, adresse) n'est collectée lors de l'inscription. En cas d'achat de Flocons, les transactions sont traitées par un prestataire de paiement tiers (Stripe) — Bomber Rivals ne stocke aucune donnée bancaire. Conformément au RGPD, l'utilisateur peut demander la suppression de son compte en contactant un administrateur.</p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">8. Limitation de responsabilité</h3>
+<p>Bomber Rivals est fourni "tel quel". L'éditeur ne garantit pas un accès continu et ininterrompu au service. L'éditeur ne saurait être tenu responsable des pertes de données, de progression, ou de Flocons résultant d'un dysfonctionnement technique, d'une maintenance, ou d'une cessation du service.</p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">9. Modifications des CGU</h3>
+<p>L'éditeur se réserve le droit de modifier les présentes CGU à tout moment. Les utilisateurs seront informés des modifications via le système de news du jeu. La poursuite de l'utilisation du service après modification vaut acceptation des nouvelles CGU.</p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">10. Droit applicable</h3>
+<p>Les présentes CGU sont soumises au droit français. En cas de litige, les tribunaux compétents seront ceux du ressort du domicile de l'éditeur.</p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">11. Contact</h3>
+<p>Pour toute question relative aux présentes CGU, l'utilisateur peut contacter l'éditeur via le système de signalement intégré au jeu ou par email à l'adresse indiquée dans les mentions légales.</p>
+</div>
+</div></div>
+
+<!-- MENTIONS LÉGALES -->
+<div id="pg-legal" class="page hidden" style="align-items:flex-start;padding:24px;overflow-y:auto">
+<div style="max-width:800px;width:100%;margin:0 auto">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><h2 class="f1" style="font-size:22px;color:#67D4FF;margin:0">⚖️ MENTIONS LÉGALES</h2><button class="btn2" style="padding:8px 16px;font-size:13px" onclick="go('landing')">← RETOUR</button></div>
+<div style="background:#15334D;border:1px solid #1E4D7A;border-radius:14px;padding:28px;color:#C8D6E5;font-size:14px;line-height:1.8">
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">Éditeur du site</h3>
+<p>Bomber Rivals est édité par <b style="color:#FFF">Maxime Camy</b>, personne physique.<br>
+Adresse email : <b style="color:#FFF">camy.maxime@gmail.com</b><br>
+Site web : <b style="color:#FFF">https://bomber-rivals.com</b></p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">Hébergement</h3>
+<p>Le site est hébergé par <b style="color:#FFF">OVH SAS</b><br>
+2 rue Kellermann, 59100 Roubaix, France<br>
+Téléphone : 1007<br>
+Site web : <a href="https://www.ovh.com" style="color:#0EA5E9" target="_blank">www.ovh.com</a></p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">Propriété intellectuelle</h3>
+<p>L'ensemble des éléments composant le site Bomber Rivals (textes, graphismes, logiciels, sons, images, animations) sont la propriété exclusive de l'éditeur ou font l'objet d'une autorisation d'utilisation. Toute représentation, reproduction ou exploitation non autorisée de tout ou partie de ces éléments est interdite et constituerait une contrefaçon sanctionnée par les articles L.335-2 et suivants du Code de la propriété intellectuelle.</p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">Données personnelles et RGPD</h3>
+<p>Conformément au Règlement Général sur la Protection des Données (RGPD) et à la loi Informatique et Libertés, l'utilisateur dispose d'un droit d'accès, de rectification et de suppression de ses données personnelles.</p>
+<p>Données collectées :</p>
+<p>• <b style="color:#FFF">Pseudonyme</b> — choisi par l'utilisateur lors de l'inscription<br>
+• <b style="color:#FFF">Mot de passe</b> — hashé avec bcrypt, jamais stocké en clair<br>
+• <b style="color:#FFF">Statistiques de jeu</b> — parties jouées, victoires, LP, niveau, inventaire<br>
+• <b style="color:#FFF">Adresse IP</b> — traitée par le serveur de jeu pour la connexion, non stockée</p>
+<p>Aucun cookie de tracking n'est utilisé. Aucune donnée n'est transmise à des tiers, sauf dans le cadre du traitement des paiements (Stripe). Pour exercer vos droits, contactez : <b style="color:#FFF">camy.maxime@gmail.com</b></p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">Cookies</h3>
+<p>Le site utilise uniquement le stockage local du navigateur (localStorage) pour sauvegarder les préférences utilisateur (volume sonore, identifiants de connexion). Aucun cookie publicitaire ou de tracking n'est utilisé.</p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">Limitation de responsabilité</h3>
+<p>L'éditeur s'efforce de fournir un service de qualité mais ne peut garantir l'absence d'interruptions ou d'erreurs. L'éditeur décline toute responsabilité en cas de perte de données ou de dommages résultant de l'utilisation du site.</p>
+
+<h3 style="color:#67D4FF;font-size:16px;margin:18px 0 8px">Droit applicable</h3>
+<p>Le présent site est soumis au droit français. Tout litige sera de la compétence exclusive des tribunaux français.</p>
+</div>
+</div></div>
 
 <script>
 const GW=15,GH=13,CELL=52,FUSE=3400,EXDUR=500;
@@ -380,7 +464,7 @@ socket.on("onlineCount",n=>{onlineCnt=n;const el=document.getElementById("online
 
 // PAGES
 let profileTarget=null;
-const PGS=["landing","login","menu","queue","accept","shop","profile","lb","pass","cosmetics","news","admin","quests","friends","spectate","game"];
+const PGS=["landing","login","menu","queue","accept","shop","profile","lb","pass","cosmetics","news","admin","quests","friends","spectate","cgu","legal","game"];
 function go(p){PGS.forEach(id=>{const el=document.getElementById("pg-"+id);if(el)el.classList.add("hidden")});const el=document.getElementById("pg-"+p);if(el)el.classList.remove("hidden");
   const noScroll=["game","menu","queue","accept"];
   document.body.style.overflow=noScroll.includes(p)?"hidden":"auto";
