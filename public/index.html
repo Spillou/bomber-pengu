@@ -591,15 +591,59 @@ function renderShop(){if(!me)return;
     document.getElementById("shopC").innerHTML=`
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h2 class="f1" style="font-size:20px;color:#67D4FF;margin:0">🏪 BOUTIQUE DU JOUR</h2><div style="display:flex;align-items:center;gap:5px;background:#15334D;padding:6px 14px;border-radius:8px;border:1px solid #1E4D7A"><span style="font-size:18px">❄️</span><span style="color:#FFB347;font-weight:700;font-size:18px" class="f1">${me.flocons||0}</span></div></div>
 <div style="color:#7A9BBF;font-size:12px;margin-bottom:16px">⏱️ Rotation dans <b style="color:#67D4FF">${fmtTimeLeft(rot.endMs)}</b> — Nouvelle sélection chaque jour à minuit UTC</div>
+<!-- ACHETER DES FLOCONS -->
+<div style="background:linear-gradient(135deg,#1A3D5C,#15334D);border:2px solid #FFB34755;border-radius:14px;padding:16px;margin-bottom:20px">
+<h3 class="f1" style="color:#FFB347;font-size:15px;margin:0 0 10px;text-align:center">❄️ ACHETER DES FLOCONS</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px" id="floconPacks"></div>
+</div>
 <h3 class="f1" style="color:#67D4FF;font-size:14px;margin-bottom:8px">🐧 SKINS DU JOUR</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:22px">${shopSkins.map(s=>{const col=skinCol(s.id);const rar=RAR[skinRar(s.id)];const own=(me.ownedSkins||[]).includes(s.id);const eq=me.skin===s.id;return`<div style="background:#15334D;border:2px solid ${eq?col:rar.c+"55"};border-radius:10px;padding:14px;text-align:center;position:relative"><div style="position:absolute;top:4px;right:4px;font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;background:${rar.g};color:#FFF" class="f1">${rar.n.toUpperCase()}</div>${miniPengu(col,SK[s.id])}<div style="font-weight:700;font-size:14px">${s.n}</div>${own?`<div style="margin-top:6px;color:#34D399;font-size:11px;font-weight:700" class="f1">✓ POSSÉDÉ</div>`:`<button onclick="buySk('${s.id}',${s.p})" style="margin-top:6px;background:${(me.flocons||0)>=s.p?"#0EA5E9":"#555"};color:#FFF;border:none;padding:5px 14px;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;width:100%">❄️ ${s.p}</button>`}</div>`}).join("")}</div>
 <h3 class="f1" style="color:#67D4FF;font-size:14px;margin-bottom:8px">🗺️ ARÈNES DU JOUR</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:22px">${shopArenas.map(a=>{const ar=AR[a.id];const rar=RAR[ar.r||"common"];const own=(me.ownedArenas||[]).includes(a.id);return`<div style="background:#15334D;border:2px solid ${rar.c+"55"};border-radius:10px;padding:14px;text-align:center;position:relative"><div style="position:absolute;top:4px;right:4px;font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;background:${rar.g};color:#FFF" class="f1">${rar.n.toUpperCase()}</div>${miniArena(ar)}<div style="font-weight:700;font-size:14px">${a.n}</div>${own?`<div style="margin-top:6px;color:#34D399;font-size:11px;font-weight:700" class="f1">✓ POSSÉDÉE</div>`:`<button onclick="buyAr('${a.id}',${a.p})" style="margin-top:6px;background:${(me.flocons||0)>=a.p?"#0EA5E9":"#555"};color:#FFF;border:none;padding:5px 14px;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;width:100%">❄️ ${a.p}</button>`}</div>`}).join("")}</div>
 <h3 class="f1" style="color:#67D4FF;font-size:14px;margin-bottom:8px">😀 ÉMOTES DU JOUR</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:22px">${shopEmotes.map(k=>{const e=EM[k];const rar=RAR[e.r||"common"];const own=owned.includes(k);return`<div style="background:#15334D;border:2px solid ${rar.c+"55"};border-radius:10px;padding:12px;text-align:center;position:relative"><div style="position:absolute;top:3px;right:3px;font-size:7px;font-weight:700;padding:1px 4px;border-radius:3px;background:${rar.g};color:#FFF" class="f1">${rar.n.substring(0,4).toUpperCase()}</div><div style="font-size:34px;margin-bottom:4px">${e.e}</div><div style="font-weight:700;font-size:12px;color:${e.c}" class="f1">${e.t}</div>${own?`<div style="margin-top:6px;color:#34D399;font-size:10px;font-weight:700" class="f1">✓ POSSÉDÉE</div>`:`<button onclick="buyEm('${k}',${e.p})" style="margin-top:6px;background:${(me.flocons||0)>=e.p?"#0EA5E9":"#555"};color:#FFF;border:none;padding:5px 10px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;width:100%">❄️ ${e.p}</button>`}</div>`}).join("")}</div>
 <h3 class="f1" style="color:#67D4FF;font-size:14px;margin-bottom:8px">👤 AVATARS DU JOUR</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:22px">${(rot.avatars||[]).filter(id=>AV[id]).map(id=>{const av=AV[id];const rar=RAR[av.r||"common"];const own=(me.ownedAvatars||[]).includes(id);return`<div style="background:#15334D;border:2px solid ${rar.c+"55"};border-radius:10px;padding:12px;text-align:center;position:relative"><div style="position:absolute;top:3px;right:3px;font-size:7px;font-weight:700;padding:1px 4px;border-radius:3px;background:${rar.g};color:#FFF" class="f1">${rar.n.substring(0,4).toUpperCase()}</div><div style="height:52px;display:flex;align-items:center;justify-content:center;margin-bottom:6px">${renderAvatar(id,40)}</div><div style="font-weight:700;font-size:12px" class="f1">${av.n}</div>${own?`<div style="margin-top:6px;color:#34D399;font-size:10px;font-weight:700" class="f1">✓ POSSÉDÉ</div>`:`<button onclick="buyAv('${id}',${av.p})" style="margin-top:6px;background:${(me.flocons||0)>=av.p?"#0EA5E9":"#555"};color:#FFF;border:none;padding:5px 10px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;width:100%">❄️ ${av.p}</button>`}</div>`}).join("")}</div>
 <div style="background:#15334D;border:1px solid #A78BFA55;border-radius:8px;padding:12px;text-align:center;margin-bottom:16px;color:#A78BFA;font-size:13px" class="f1">💡 Va dans <b>🎨 Perso</b> pour équiper tes cosmétiques</div>
-<button class="btn2" style="width:100%;padding:14px;font-size:15px" onclick="go('menu')">← RETOUR</button>`});
+<button class="btn2" style="width:100%;padding:14px;font-size:15px" onclick="go('menu')">← RETOUR</button>`;loadFloconPacks()});
 }
 function eqSk(id){socket.emit("updateUser",{user:{username:me.username,skin:id}},r=>{if(r.user)me=r.user;renderShop()})}
 function buySk(id,p){if((me.flocons||0)<p)return;socket.emit("updateUser",{user:{username:me.username,flocons:(me.flocons||0)-p,ownedSkins:[...(me.ownedSkins||[]),id],skin:id}},r=>{if(r.user)me=r.user;renderShop()})}
+
+// FLOCON PURCHASE
+function loadFloconPacks(){
+  fetch("/api/packs").then(r=>r.json()).then(d=>{
+    const container=document.getElementById("floconPacks");if(!container)return;
+    const bonusLabels={"pack_500":"","pack_1200":"+200 bonus","pack_2500":"+500 bonus","pack_5000":"+1000 bonus","pack_12000":"+3000 bonus"};
+    container.innerHTML=d.packs.map(p=>{
+      const bonus=bonusLabels[p.id]||"";
+      const popular=p.id==="pack_2500";
+      return`<div style="background:${popular?"linear-gradient(135deg,#0E2A45,#163D5C)":"#0E2A45"};border:2px solid ${popular?"#FFB347":"#1E4D7A"};border-radius:10px;padding:14px;text-align:center;position:relative;cursor:pointer;transition:transform .15s" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'" onclick="buyFlocons('${p.id}')">
+        ${popular?'<div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#FFB347;color:#0B1E36;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap" class="f1">POPULAIRE</div>':""}
+        <div style="font-size:28px;margin-bottom:4px">❄️</div>
+        <div style="color:#FFF;font-size:18px;font-weight:700" class="f1">${p.flocons.toLocaleString()}</div>
+        ${bonus?`<div style="color:#34D399;font-size:10px;font-weight:700" class="f1">${bonus}</div>`:""}
+        <div style="background:linear-gradient(135deg,#FFB347,#F59E0B);color:#0B1E36;font-weight:700;font-size:14px;padding:6px 12px;border-radius:6px;margin-top:8px" class="f1">${p.display}</div>
+      </div>`}).join("");
+  }).catch(e=>console.error("Failed to load packs:",e));
+}
+async function buyFlocons(packId){
+  if(!me?.username){alert("Connecte-toi d'abord");return}
+  try{
+    const r=await fetch("/api/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({packId,username:me.username})});
+    const d=await r.json();
+    if(d.url)window.location.href=d.url;
+    else alert(d.error||"Erreur");
+  }catch(e){alert("Erreur de connexion")}
+}
+// Listen for flocons update from server (after Stripe webhook)
+socket.on("floconsUpdated",d=>{if(me){me.flocons=d.flocons;renderMenu();if(document.getElementById("pg-shop")&&!document.getElementById("pg-shop").classList.contains("hidden"))renderShop()}});
+// Check payment success on page load
+(function checkPaymentReturn(){
+  const params=new URLSearchParams(window.location.search);
+  if(params.get("payment")==="success"){
+    window.history.replaceState({},"","/");
+    setTimeout(()=>{if(me)alert("✅ Paiement réussi ! Tes Flocons ont été crédités.")},1500);
+  }else if(params.get("payment")==="cancel"){
+    window.history.replaceState({},"","/");
+  }
+})();
 function eqAr(id){socket.emit("updateUser",{user:{username:me.username,arena:id}},r=>{if(r.user)me=r.user;renderShop()})}
 function buyAr(id,p){if((me.flocons||0)<p)return;socket.emit("updateUser",{user:{username:me.username,flocons:(me.flocons||0)-p,ownedArenas:[...(me.ownedArenas||[]),id],arena:id}},r=>{if(r.user)me=r.user;renderShop()})}
 function buyEm(k,p){if((me.flocons||0)<p)return;const newOwned=[...(me.ownedEmotes||["1","2","3","4"]),k];socket.emit("updateUser",{user:{username:me.username,flocons:(me.flocons||0)-p,ownedEmotes:newOwned}},r=>{if(r.user)me=r.user;renderShop()})}
