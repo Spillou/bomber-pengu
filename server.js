@@ -568,4 +568,4 @@ io.on("connection",sock=>{
 });
 
 const PORT=process.env.PORT||3000;
-server.listen(PORT,()=>console.log(`🐧 Bomber Pengu on port ${PORT}`));
+server.listen(PORT,()=>console.log(`🐧 Bomber Rivals on port ${PORT}`));
