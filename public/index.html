@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Bomber Pengu — Ranked</title>
+<title>Bomber Rivals — Ranked</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
@@ -47,7 +47,7 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
 <!-- LANDING -->
 <div id="pg-landing"><div style="height:100vh;display:flex;flex-direction:column;background:radial-gradient(ellipse at 50% 30%,#1B4D72 0%,#0B1E36 70%);overflow:hidden;position:relative">
 <canvas id="landingSnow" style="position:absolute;inset:0;pointer-events:none;opacity:.25;z-index:0"></canvas>
-<nav style="display:flex;align-items:center;justify-content:space-between;padding:10px 30px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;z-index:2"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:24px">🐧</span><span class="f1" style="font-size:18px;font-weight:700;letter-spacing:2px">BOMBER PENGU</span></div><button class="btn" style="padding:8px 20px;font-size:14px" onclick="go('login')">JOUER</button></nav>
+<nav style="display:flex;align-items:center;justify-content:space-between;padding:10px 30px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;z-index:2"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:24px">🐧</span><span class="f1" style="font-size:18px;font-weight:700;letter-spacing:2px">BOMBER RIVALS</span></div><button class="btn" style="padding:8px 20px;font-size:14px" onclick="go('login')">JOUER</button></nav>
 <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2;padding:10px 30px;gap:14px;text-align:center">
   <!-- Hero -->
   <div style="display:flex;align-items:center;gap:18px">
@@ -57,7 +57,7 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
   </div>
   <h1 class="f1" style="font-size:clamp(36px,6vw,58px);font-weight:700;line-height:1;margin:0">
     <span style="background:linear-gradient(135deg,#38BDF8,#0EA5E9,#67D4FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200%;animation:shimmer 3s linear infinite">BOMBER</span>
-    <span style="color:#FFF"> PENGU</span>
+    <span style="color:#FFF"> RIVALS</span>
   </h1>
   <p style="font-size:16px;color:rgba(255,255,255,.55);max-width:560px;margin:0;line-height:1.5">Affronte de vrais joueurs dans des arènes de glace explosives. Pose des bombes, récupère des power-ups, grimpe du Bronze au rang Maître et personnalise ton pingouin avec des dizaines de skins et accessoires.</p>
   <button class="btn" style="padding:16px 48px;font-size:20px;animation:pulse 2s infinite;border-radius:14px;font-weight:700;letter-spacing:1px" onclick="go('login')">🎮 JOUER GRATUITEMENT</button>
@@ -75,12 +75,12 @@ input{background:#15334D;border:1px solid #1E4D7A;color:#E8F0F8;padding:12px 14p
   <!-- Ranks -->
   <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap" id="rankShowcase"></div>
 </div>
-<div style="flex-shrink:0;padding:6px;text-align:center;color:rgba(255,255,255,.1);font-size:10px;z-index:2">Bomber Pengu © 2026</div>
+<div style="flex-shrink:0;padding:6px;text-align:center;color:rgba(255,255,255,.1);font-size:10px;z-index:2">Bomber Rivals © 2026</div>
 </div></div>
 
 <!-- LOGIN -->
 <div id="pg-login" class="page hidden"><div class="card">
-<div style="text-align:center;margin-bottom:24px"><div style="font-size:50px">🐧</div><h1 class="f1" style="font-size:24px;color:#67D4FF">BOMBER PENGU</h1></div>
+<div style="text-align:center;margin-bottom:24px"><div style="font-size:50px">🐧</div><h1 class="f1" style="font-size:24px;color:#67D4FF">BOMBER RIVALS</h1></div>
 <div style="display:flex;margin-bottom:20px;border-radius:6px;overflow:hidden;border:1px solid #1E4D7A"><button id="tabL" class="f1" style="flex:1;padding:12px;border:none;cursor:pointer;background:#0EA5E9;color:#FFF;font-weight:700;font-size:14px" onclick="setTab(0)">CONNEXION</button><button id="tabR" class="f1" style="flex:1;padding:12px;border:none;cursor:pointer;background:transparent;color:#7A9BBF;font-weight:700;font-size:14px" onclick="setTab(1)">INSCRIPTION</button></div>
 <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:18px"><input id="inU" placeholder="Pseudo" autocomplete="off"><input id="inP" placeholder="Mot de passe" type="password" autocomplete="off"></div>
 <div id="loginErr" style="color:#F87171;font-size:14px;margin-bottom:10px;text-align:center;font-weight:600;display:none"></div>
