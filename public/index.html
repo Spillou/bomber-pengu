@@ -669,7 +669,7 @@ function renderPass(){if(!me)return;
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div class="f1" style="font-size:14px;color:#7A9BBF">PALIER ACTUEL</div><div style="display:flex;align-items:center;gap:10px"><div class="f1" style="font-size:32px;color:#A78BFA;font-weight:700">${tierInfo.tier}</div><div style="color:#7A9BBF;font-size:12px">/ 25</div></div></div>
   ${tierInfo.tier<25?`<div style="background:#1E4D7A;border-radius:3px;height:8px;overflow:hidden;margin-bottom:4px"><div style="height:100%;background:linear-gradient(90deg,#A78BFA,#C4B5FD);width:${Math.round(tierInfo.progress/tierInfo.needed*100)}%"></div></div><div style="font-size:11px;color:#A78BFA" class="f1">${tierInfo.progress} / ${tierInfo.needed} XP jusqu'au palier ${tierInfo.tier+1}</div>`:`<div style="color:#FFD700;font-size:13px" class="f1">✨ Passe complété !</div>`}
 </div>
-${!hasPass?`<div style="background:linear-gradient(135deg,#A78BFA22,#FFD70022);border:2px solid #A78BFA;border-radius:12px;padding:16px;margin-bottom:20px;text-align:center"><div class="f1" style="font-size:16px;color:#A78BFA;margin-bottom:6px">🔓 Débloque le Passe Premium</div><div style="color:#7A9BBF;font-size:13px;margin-bottom:12px">Accède à toutes les récompenses (${SEASON_REWARDS_BP_COUNT} skins/arènes/émotes exclusifs)</div><button class="btn" style="background:linear-gradient(135deg,#A78BFA,#C4B5FD);padding:12px 30px;font-size:15px" onclick="buyPass()">💎 500 Flocons</button></div>`:`<div style="background:#34D39922;border:1px solid #34D399;border-radius:8px;padding:10px;margin-bottom:20px;text-align:center" class="f1"><span style="color:#34D399;font-weight:700">✓ Passe Premium actif</span></div>`}
+${!hasPass?`<div style="background:linear-gradient(135deg,#A78BFA22,#FFD70022);border:2px solid #A78BFA;border-radius:12px;padding:16px;margin-bottom:20px;text-align:center"><div class="f1" style="font-size:16px;color:#A78BFA;margin-bottom:6px">🔓 Débloque le Passe Premium</div><div style="color:#7A9BBF;font-size:13px;margin-bottom:12px">Accède à toutes les récompenses premium (skins, arènes, émotes exclusifs)</div><button class="btn" style="background:linear-gradient(135deg,#A78BFA,#C4B5FD);padding:12px 30px;font-size:15px" onclick="buyPass()">💎 950 Flocons</button></div>`:`<div style="background:#34D39922;border:1px solid #34D399;border-radius:8px;padding:10px;margin-bottom:20px;text-align:center" class="f1"><span style="color:#34D399;font-weight:700">✓ Passe Premium actif</span></div>`}
 <h3 class="f1" style="color:#67D4FF;font-size:14px;margin-bottom:10px">📦 RÉCOMPENSES</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:20px">${d.rewards.map(r=>{const unlocked=tierInfo.tier>=r.tier;const claimed=sd.claimed.includes(r.tier);const canClaim=unlocked&&!claimed&&(r.free||hasPass);const locked=!r.free&&!hasPass;return`<div style="background:${claimed?"rgba(52,211,153,.1)":unlocked?"#15334D":"rgba(30,77,122,.3)"};border:2px solid ${claimed?"#34D399":r.free?"#67D4FF55":"#A78BFA55"};border-radius:10px;padding:12px;text-align:center;position:relative;opacity:${unlocked?1:.55}">
 ${r.free?'<div style="position:absolute;top:4px;right:4px;font-size:8px;background:#67D4FF;color:#0B1E36;padding:1px 4px;border-radius:3px;font-weight:700" class="f1">GRATUIT</div>':'<div style="position:absolute;top:4px;right:4px;font-size:8px;background:#A78BFA;color:#0B1E36;padding:1px 4px;border-radius:3px;font-weight:700" class="f1">PREMIUM</div>'}
@@ -777,22 +777,14 @@ function renderAdminNews(){
 <h3 class="f1" style="color:#F59E0B;font-size:15px;margin-bottom:12px">✍️ Nouvel article</h3>
 <input id="admNewsTitle" placeholder="Titre de l'article" style="width:100%;padding:10px;background:#0B1E36;border:1px solid #1E4D7A;border-radius:6px;color:#FFF;font-size:14px;margin-bottom:10px">
 <div style="margin-bottom:10px">
-  <label class="f1" style="font-size:11px;color:#7A9BBF;display:block;margin-bottom:4px">🖼️ Miniature <span style="color:#67D4FF">(300×300px, carré)</span></label>
-  <div style="display:flex;gap:8px;align-items:center">
-    <input id="admNewsThumbnail" type="hidden">
-    <button onclick="uploadThumbImg()" style="background:#10B981;color:#FFF;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700">📤 Miniature</button>
-    <div id="admThumbPreview" style="width:48px;height:48px;border-radius:8px;background:#1E4D7A;border:1px solid #1E4D7A;overflow:hidden;flex-shrink:0"></div>
-    <button onclick="document.getElementById('admNewsThumbnail').value='';document.getElementById('admThumbPreview').innerHTML=''" style="background:none;border:none;color:#7A9BBF;cursor:pointer;font-size:11px">✕ Retirer</button>
-  </div>
+  <label class="f1" style="font-size:11px;color:#7A9BBF;display:block;margin-bottom:4px">🖼️ Miniature <span style="color:#67D4FF">(300×300px)</span></label>
+  <input id="admNewsThumbnail" type="hidden">
+  <div style="display:flex;gap:6px;flex-wrap:wrap" id="thumbPicker"></div>
 </div>
 <div style="margin-bottom:10px">
-  <label class="f1" style="font-size:11px;color:#7A9BBF;display:block;margin-bottom:4px">🖼️ En-tête <span style="color:#67D4FF">(1200×400px, bannière)</span></label>
-  <div style="display:flex;gap:8px;align-items:center">
-    <input id="admNewsImage" type="hidden">
-    <button onclick="uploadHeaderImg()" style="background:#0EA5E9;color:#FFF;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700">📤 En-tête</button>
-    <div id="admImgPreview" style="width:48px;height:48px;border-radius:8px;background:#1E4D7A;border:1px solid #1E4D7A;overflow:hidden;flex-shrink:0"></div>
-    <button onclick="document.getElementById('admNewsImage').value='';document.getElementById('admImgPreview').innerHTML=''" style="background:none;border:none;color:#7A9BBF;cursor:pointer;font-size:11px">✕ Retirer</button>
-  </div>
+  <label class="f1" style="font-size:11px;color:#7A9BBF;display:block;margin-bottom:4px">🖼️ En-tête <span style="color:#67D4FF">(1200×400px)</span></label>
+  <input id="admNewsImage" type="hidden">
+  <div style="display:flex;gap:6px;flex-wrap:wrap" id="headerPicker"></div>
 </div>
 <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;background:#0B1E36;padding:6px;border-radius:6px;border:1px solid #1E4D7A">
   <button onmousedown="event.preventDefault()" onclick="fmt('bold')" style="background:#1E4D7A;color:#FFF;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-weight:700">B</button>
@@ -814,17 +806,39 @@ function renderAdminNews(){
 <button class="btn" style="width:100%;margin-top:10px;padding:10px" onclick="publishNews()">📢 PUBLIER</button>
 </div>
 <h3 class="f1" style="color:#F59E0B;font-size:15px;margin-bottom:10px">📚 Articles publiés (${news.length})</h3>
-${news.length===0?'<div style="color:#7A9BBF;text-align:center;padding:20px">Aucun article</div>':news.map(n=>`<div style="background:#15334D;border:1px solid #1E4D7A;border-radius:8px;padding:12px;margin-bottom:10px;display:flex;gap:12px;align-items:center">
-${n.image?`<img src="${esc(n.image)}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0">`:'<div style="width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,#0EA5E9,#38BDF8);flex-shrink:0;display:flex;align-items:center;justify-content:center"><span style="font-size:20px">📰</span></div>'}
+${news.length===0?'<div style="color:#7A9BBF;text-align:center;padding:20px">Aucun article</div>':news.map(n=>{const thumb=n.thumbnail||n.image;return`<div style="background:#15334D;border:1px solid #1E4D7A;border-radius:8px;padding:12px;margin-bottom:10px;display:flex;gap:12px;align-items:center">
+${thumb?`<img src="${esc(thumb)}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0">`:'<div style="width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,#0EA5E9,#38BDF8);flex-shrink:0;display:flex;align-items:center;justify-content:center"><span style="font-size:20px">📰</span></div>'}
 <div style="flex:1;min-width:0"><div class="f1" style="color:#67D4FF;font-size:14px;font-weight:700">${esc(n.title)}</div><div style="color:#7A9BBF;font-size:11px">${new Date(n.createdAt).toLocaleString("fr-FR")} — par ${esc(n.author)}</div></div>
-<button onclick="deleteNews(${n.id})" style="background:#EF4444;color:#FFF;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-size:12px;flex-shrink:0">🗑️</button></div>`).join("")}`
+<button onclick="deleteNews(${n.id})" style="background:#EF4444;color:#FFF;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-size:12px;flex-shrink:0">🗑️</button></div>`}).join("")}`
     // Image preview handled by uploadHeaderImg
-    })}function fmt(cmd,val){if(cmd==='formatBlock')document.execCommand(cmd,false,'<'+val+'>');else document.execCommand(cmd,false,val||null);document.getElementById("admNewsBody").focus()}
+    initImagePickers()})}function fmt(cmd,val){if(cmd==='formatBlock')document.execCommand(cmd,false,'<'+val+'>');else document.execCommand(cmd,false,val||null);document.getElementById("admNewsBody").focus()}
 function addLink(){const url=prompt("URL du lien:");if(url)fmt("createLink",url)}
 function uploadInlineImg(){document.getElementById("imgUploadHidden").click()}
 function handleImgUpload(input){if(!input.files||!input.files[0])return;const f=input.files[0];if(f.size>2*1024*1024){alert("Image trop lourde (max 2 Mo)");return}const r=new FileReader();r.onload=e=>{document.execCommand("insertImage",false,e.target.result);document.getElementById("admNewsBody").focus()};r.readAsDataURL(f);input.value=""}
-function uploadHeaderImg(){const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.onchange=()=>{if(!inp.files||!inp.files[0])return;const f=inp.files[0];if(f.size>2*1024*1024){alert("Image trop lourde (max 2 Mo)");return}const r=new FileReader();r.onload=e=>{document.getElementById("admNewsImage").value=e.target.result;const prev=document.getElementById("admImgPreview");if(prev)prev.innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover">`};r.readAsDataURL(f)};inp.click()}
-function uploadThumbImg(){const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.onchange=()=>{if(!inp.files||!inp.files[0])return;const f=inp.files[0];if(f.size>2*1024*1024){alert("Image trop lourde (max 2 Mo)");return}const r=new FileReader();r.onload=e=>{document.getElementById("admNewsThumbnail").value=e.target.result;const prev=document.getElementById("admThumbPreview");if(prev)prev.innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover">`};r.readAsDataURL(f)};inp.click()}
+function uploadHeaderImg(){}
+function uploadThumbImg(){}
+const NEWS_THUMBS=[
+  {id:"thumb_maj",url:"/img/thumb_maj.png",label:"M.A.J"},
+  {id:"thumb_devblog",url:"/img/thumb_devblog.png",label:"DevBlog"},
+  {id:"thumb_annonce",url:"/img/thumb_annonce.png",label:"Annonce"},
+  {id:"thumb_concours",url:"/img/thumb_concours.png",label:"Concours"},
+  {id:"thumb_tournoi",url:"/img/thumb_tournoi.png",label:"Tournoi"}
+];
+const NEWS_HEADERS=[
+  {id:"header_maj",url:"/img/header_maj.png",label:"M.A.J"},
+  {id:"header_devblog",url:"/img/header_devblog.png",label:"DevBlog"},
+  {id:"header_annonce",url:"/img/header_annonce.png",label:"Annonce"},
+  {id:"header_concours",url:"/img/header_concours.png",label:"Concours"},
+  {id:"header_tournoi",url:"/img/header_tournoi.png",label:"Tournoi"}
+];
+function initImagePickers(){
+  const tp=document.getElementById("thumbPicker");
+  const hp=document.getElementById("headerPicker");
+  if(tp)tp.innerHTML=NEWS_THUMBS.map(t=>`<div onclick="pickThumb('${t.url}')" style="cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;width:60px;height:60px;transition:border-color .15s" id="tp_${t.id}" onmouseover="this.style.borderColor='#0EA5E9'" onmouseout="this.style.borderColor=this.dataset.sel==='1'?'#34D399':'transparent'"><img src="${t.url}" style="width:100%;height:100%;object-fit:cover"><div style="font-size:8px;color:#7A9BBF;text-align:center;margin-top:-2px">${t.label}</div></div>`).join("")+'<div onclick="pickThumb(\'\')" style="cursor:pointer;border:2px solid transparent;border-radius:8px;width:60px;height:60px;display:flex;align-items:center;justify-content:center;background:#1E4D7A;color:#7A9BBF;font-size:10px">Aucune</div>';
+  if(hp)hp.innerHTML=NEWS_HEADERS.map(h=>`<div onclick="pickHeader('${h.url}')" style="cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;width:120px;height:40px;transition:border-color .15s" id="hp_${h.id}" onmouseover="this.style.borderColor='#0EA5E9'" onmouseout="this.style.borderColor=this.dataset.sel==='1'?'#34D399':'transparent'"><img src="${h.url}" style="width:100%;height:100%;object-fit:cover"></div>`).join("")+'<div onclick="pickHeader(\'\')" style="cursor:pointer;border:2px solid transparent;border-radius:8px;width:120px;height:40px;display:flex;align-items:center;justify-content:center;background:#1E4D7A;color:#7A9BBF;font-size:10px">Aucune</div>';
+}
+function pickThumb(url){document.getElementById("admNewsThumbnail").value=url;document.querySelectorAll("[id^=tp_]").forEach(el=>{el.style.borderColor="transparent";el.dataset.sel=""});if(url){const id="tp_"+NEWS_THUMBS.find(t=>t.url===url)?.id;const el=document.getElementById(id);if(el){el.style.borderColor="#34D399";el.dataset.sel="1"}}}
+function pickHeader(url){document.getElementById("admNewsImage").value=url;document.querySelectorAll("[id^=hp_]").forEach(el=>{el.style.borderColor="transparent";el.dataset.sel=""});if(url){const id="hp_"+NEWS_HEADERS.find(h=>h.url===url)?.id;const el=document.getElementById(id);if(el){el.style.borderColor="#34D399";el.dataset.sel="1"}}}
 function publishNews(){const title=document.getElementById("admNewsTitle").value.trim();const html=document.getElementById("admNewsBody").innerHTML.trim();const image=(document.getElementById("admNewsImage")?.value||"").trim();const thumbnail=(document.getElementById("admNewsThumbnail")?.value||"").trim();if(!title||!html){alert("Titre et contenu requis");return}socket.emit("admin_createNews",{title,html,image:image||null,thumbnail:thumbnail||null},r=>{if(r.error){alert(r.error);return}document.getElementById("admNewsTitle").value="";document.getElementById("admNewsBody").innerHTML="";if(document.getElementById("admNewsImage"))document.getElementById("admNewsImage").value="";if(document.getElementById("admNewsThumbnail"))document.getElementById("admNewsThumbnail").value="";if(document.getElementById("admImgPreview"))document.getElementById("admImgPreview").innerHTML="";if(document.getElementById("admThumbPreview"))document.getElementById("admThumbPreview").innerHTML="";renderAdminNews()})}
 function deleteNews(id){if(!confirm("Supprimer cet article ?"))return;socket.emit("admin_deleteNews",{id},r=>{if(r.error){alert(r.error);return}renderAdminNews()})}
 function renderAdminReports(){
