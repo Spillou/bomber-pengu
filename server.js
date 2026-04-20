@@ -1,6 +1,6 @@
 const express=require("express"),http=require("http"),{Server}=require("socket.io"),path=require("path"),fs=require("fs"),bcrypt=require("bcryptjs"),Database=require("better-sqlite3");
-const stripe=require("stripe")("sk_test_51RKVZUF4dCmy11w7HCMcPd8bxMOlMbpDJi8myp7205xBDp9YhHl9Of6WhI8B52CDrpe7poiJRr60iWoADm377RLg00rQMYj79G");
-const STRIPE_PK="pk_test_51RKVZUF4dCmy11w7MJ7Uy9Y753hKjJ5gfEAPH3yFJhHUY9cJvcknyX7DRCiuiY1PEEjSfblmWSxzrAVaJEDZpmCq009TW1Qkxv";
+const stripe=require("stripe")(process.env.STRIPE_SK||"sk_test_placeholder");
+const STRIPE_PK=process.env.STRIPE_PK||"pk_test_placeholder";
 const FLOCON_PACKS=[
   {id:"pack_500",name:"500 Flocons",flocons:500,price:499,display:"4,99 €"},
   {id:"pack_1200",name:"1 200 Flocons",flocons:1200,price:999,display:"9,99 €"},
