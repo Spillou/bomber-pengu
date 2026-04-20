@@ -1,5 +1,86 @@
 const express=require("express"),http=require("http"),{Server}=require("socket.io"),path=require("path"),fs=require("fs"),bcrypt=require("bcryptjs"),Database=require("better-sqlite3");
+const stripe=require("stripe")("sk_test_51RKVZUF4dCmy11w7HCMcPd8bxMOlMbpDJi8myp7205xBDp9YhHl9Of6WhI8B52CDrpe7poiJRr60iWoADm377RLg00rQMYj79G");
+const STRIPE_PK="pk_test_51RKVZUF4dCmy11w7MJ7Uy9Y753hKjJ5gfEAPH3yFJhHUY9cJvcknyX7DRCiuiY1PEEjSfblmWSxzrAVaJEDZpmCq009TW1Qkxv";
+const FLOCON_PACKS=[
+  {id:"pack_500",name:"500 Flocons",flocons:500,price:499,display:"4,99 €"},
+  {id:"pack_1200",name:"1 200 Flocons",flocons:1200,price:999,display:"9,99 €"},
+  {id:"pack_2500",name:"2 500 Flocons",flocons:2500,price:1999,display:"19,99 €"},
+  {id:"pack_5000",name:"5 000 Flocons",flocons:5000,price:3499,display:"34,99 €"},
+  {id:"pack_12000",name:"12 000 Flocons",flocons:12000,price:6999,display:"69,99 €"}
+];
 const app=express(),server=http.createServer(app),io=new Server(server,{cors:{origin:"*"},maxHttpBufferSize:5e6});
+
+// Stripe webhook — MUST be before express.json() and express.static()
+app.post("/api/stripe-webhook",express.raw({type:"application/json"}),async(req,res)=>{
+  const sig=req.headers["stripe-signature"];
+  let event;
+  try{
+    // Without webhook secret (test mode), parse directly
+    event=JSON.parse(req.body.toString());
+  }catch(e){console.error("Webhook parse error:",e);return res.status(400).send("Invalid")}
+  if(event.type==="checkout.session.completed"){
+    const session=event.data.object;
+    const username=session.metadata?.username;
+    const packId=session.metadata?.packId;
+    const pack=FLOCON_PACKS.find(p=>p.id===packId);
+    if(username&&pack){
+      const u=gU(username);
+      if(u){
+        u.flocons=(u.flocons||0)+pack.flocons;
+        // Log purchase
+        if(!u.purchases)u.purchases=[];
+        u.purchases.push({packId,flocons:pack.flocons,price:pack.price,date:Date.now(),stripeSessionId:session.id});
+        pU(u);
+        console.log(`💰 ${username} bought ${pack.name} (+${pack.flocons} flocons)`);
+        // Notify player if online
+        for(const[,s] of io.sockets.sockets){
+          if(s.data?.username?.toLowerCase()===username.toLowerCase()){
+            s.emit("floconsUpdated",{flocons:u.flocons,bought:pack.flocons});
+          }
+        }
+      }
+    }
+  }
+  res.json({received:true});
+});
+
+// API routes for Stripe
+app.use(express.json({limit:"1mb"}));
+
+app.get("/api/packs",(req,res)=>{
+  res.json({packs:FLOCON_PACKS.map(p=>({id:p.id,name:p.name,flocons:p.flocons,display:p.display})),pk:STRIPE_PK});
+});
+
+app.post("/api/checkout",async(req,res)=>{
+  const{packId,username}=req.body;
+  if(!packId||!username)return res.status(400).json({error:"Paramètres manquants"});
+  const pack=FLOCON_PACKS.find(p=>p.id===packId);
+  if(!pack)return res.status(400).json({error:"Pack introuvable"});
+  const u=gU(username);
+  if(!u)return res.status(400).json({error:"Utilisateur introuvable"});
+  try{
+    const session=await stripe.checkout.sessions.create({
+      payment_method_types:["card"],
+      line_items:[{
+        price_data:{
+          currency:"eur",
+          product_data:{name:pack.name,description:`${pack.flocons} Flocons ❄️ pour Bomber Rivals`,images:["https://bomber-rivals.com/favicon.ico"]},
+          unit_amount:pack.price
+        },
+        quantity:1
+      }],
+      mode:"payment",
+      success_url:`https://bomber-rivals.com/?payment=success&pack=${packId}`,
+      cancel_url:`https://bomber-rivals.com/?payment=cancel`,
+      metadata:{username:username,packId:packId}
+    });
+    res.json({url:session.url});
+  }catch(e){
+    console.error("Stripe checkout error:",e);
+    res.status(500).json({error:"Erreur de paiement"});
+  }
+});
+
 app.use(express.static(path.join(__dirname,"public")));
 app.get("*",(req,res)=>res.sendFile(path.join(__dirname,"public","index.html")));
 const DATA=path.join(__dirname,"data");if(!fs.existsSync(DATA))fs.mkdirSync(DATA);
